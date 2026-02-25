@@ -4,15 +4,18 @@ import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { X, Clock, IndianRupee, Tag } from "lucide-react";
+import { X, Clock, IndianRupee, Tag, Plus, Trash2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatDistanceStrict } from "date-fns";
+import { inventoryService } from "@/services/inventory-service";
+import { Product, OrderItem } from "@/types/database";
 
 interface BillingModalProps {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: (total: number, discount: number) => void;
     sessionData: {
+        id: string;
         startTime: string;
         hourlyRate: number;
         tableName: string;
@@ -24,6 +27,9 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: Billin
     const [billingAmount, setBillingAmount] = useState(0);
     const [discount, setDiscount] = useState(0);
     const [finalAmount, setFinalAmount] = useState(0);
+    const [products, setProducts] = useState<Product[]>([]);
+    const [orders, setOrders] = useState<OrderItem[]>([]);
+    const [showSnackSelector, setShowSnackSelector] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -36,13 +42,27 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: Billin
 
             setDuration(formatDistanceStrict(start, now));
             setBillingAmount(amount);
-            setFinalAmount(amount);
+
+            // Initialize products and existing orders
+            inventoryService.getProducts().then(setProducts);
+            inventoryService.getSessionOrders(sessionData.id).then(setOrders);
         }
     }, [isOpen, sessionData]);
 
+    const snackTotal = orders.reduce((acc, order) => acc + (order.price_at_time * order.quantity), 0);
+
     useEffect(() => {
-        setFinalAmount(Math.max(0, billingAmount - discount));
-    }, [discount, billingAmount]);
+        setFinalAmount(Math.max(0, (billingAmount + snackTotal) - discount));
+    }, [discount, billingAmount, snackTotal]);
+
+    const handleAddSnack = async (product: Product) => {
+        try {
+            const newOrder = await inventoryService.addOrderItem(sessionData.id, product.id, 1, product.price);
+            setOrders([...orders, { ...newOrder, products: product }]);
+        } catch (error) {
+            console.error("Error adding snack:", error);
+        }
+    };
 
     if (!isOpen) return null;
 
@@ -87,8 +107,58 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: Billin
 
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Subtotal</span>
+                                    <span className="text-muted-foreground">Table Charges</span>
                                     <span className="font-medium">₹{billingAmount.toFixed(2)}</span>
+                                </div>
+
+                                {orders.length > 0 && (
+                                    <div className="space-y-2">
+                                        <div className="flex justify-between text-sm">
+                                            <span className="text-muted-foreground">Snacks & Drinks</span>
+                                            <span className="font-medium">₹{snackTotal.toFixed(2)}</span>
+                                        </div>
+                                        <div className="pl-4 space-y-1">
+                                            {orders.map((order, idx) => (
+                                                <div key={idx} className="flex justify-between text-[11px] text-muted-foreground">
+                                                    <span>{order.products?.name} x {order.quantity}</span>
+                                                    <span>₹{(order.price_at_time * order.quantity).toFixed(2)}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div className="pt-2">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="w-full h-8 border border-white/5 hover:bg-white/5 text-xs"
+                                        onClick={() => setShowSnackSelector(!showSnackSelector)}
+                                    >
+                                        <Plus size={14} className="mr-1" /> Add Snacks/Drinks
+                                    </Button>
+
+                                    <AnimatePresence>
+                                        {showSnackSelector && (
+                                            <motion.div
+                                                initial={{ height: 0, opacity: 0 }}
+                                                animate={{ height: "auto", opacity: 1 }}
+                                                exit={{ height: 0, opacity: 0 }}
+                                                className="overflow-hidden bg-white/5 rounded-lg mt-2 p-2 grid grid-cols-2 gap-2"
+                                            >
+                                                {products.map((p) => (
+                                                    <button
+                                                        key={p.id}
+                                                        onClick={() => handleAddSnack(p)}
+                                                        className="text-[10px] p-2 rounded border border-white/5 hover:bg-white/10 text-left flex justify-between items-center"
+                                                    >
+                                                        <span className="truncate">{p.name}</span>
+                                                        <span className="text-primary font-bold">₹{p.price}</span>
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
                                 </div>
 
                                 <div className="space-y-2">

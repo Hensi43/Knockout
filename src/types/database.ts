@@ -23,8 +23,27 @@ export interface Session {
     end_time: string | null;
     total_amount: number;
     discount_amount: number;
+    player_count: number;
     status: 'active' | 'completed' | 'cancelled';
     created_at: string;
+}
+
+export interface Product {
+    id: string;
+    name: string;
+    price: number;
+    category: string;
+    stock: number;
+    created_at: string;
+}
+
+export interface OrderItem {
+    id: string;
+    session_id: string;
+    product_id: string;
+    quantity: number;
+    price_at_time: number;
+    products?: Product;
 }
 
 export interface Payment {
@@ -52,6 +71,16 @@ export type Database = {
                 Row: Session;
                 Insert: Omit<Session, 'id' | 'created_at'>;
                 Update: Partial<Omit<Session, 'id' | 'created_at'>>;
+            };
+            products: {
+                Row: Product;
+                Insert: Omit<Product, 'id' | 'created_at'>;
+                Update: Partial<Omit<Product, 'id' | 'created_at'>>;
+            };
+            order_items: {
+                Row: OrderItem;
+                Insert: Omit<OrderItem, 'id' | 'created_at'>;
+                Update: Partial<Omit<OrderItem, 'id' | 'created_at'>>;
             };
             payments: {
                 Row: Payment;

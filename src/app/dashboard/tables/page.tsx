@@ -11,11 +11,17 @@ import { Plus } from "lucide-react";
 import { motion } from "framer-motion";
 import { AddTableModal } from "@/components/tables/add-table-modal";
 import { BillingModal } from "@/components/billing/billing-modal";
+import { StartSessionModal } from "@/components/tables/start-session-modal";
 
 export default function TablesPage() {
     const [tables, setTables] = useState<SnookerTable[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [startSessionModalData, setStartSessionModalData] = useState<{
+        isOpen: boolean;
+        tableId: string;
+        tableName: string;
+    } | null>(null);
     const [billingModalData, setBillingModalData] = useState<{
         isOpen: boolean;
         tableId: string;
@@ -50,9 +56,22 @@ export default function TablesPage() {
         }
     };
 
-    const handleStartSession = async (tableId: string) => {
+    const handleStartSessionClick = (tableId: string) => {
+        const table = tables.find(t => t.id === tableId);
+        if (table) {
+            setStartSessionModalData({
+                isOpen: true,
+                tableId,
+                tableName: table.name
+            });
+        }
+    };
+
+    const handleStartSessionConfirm = async (playerCount: number) => {
+        if (!startSessionModalData) return;
         try {
-            await sessionService.startSession(tableId);
+            await sessionService.startSession(startSessionModalData.tableId, playerCount);
+            setStartSessionModalData(null);
             fetchTables();
         } catch (error) {
             console.error("Error starting session:", error);
@@ -125,7 +144,7 @@ export default function TablesPage() {
                         <TableCard
                             key={table.id}
                             table={table}
-                            onStartSession={handleStartSession}
+                            onStartSession={handleStartSessionClick}
                             onStopSession={handleStopSessionClick}
                         />
                     ))}
@@ -144,12 +163,22 @@ export default function TablesPage() {
                 onConfirm={handleAddTable}
             />
 
+            {startSessionModalData && (
+                <StartSessionModal
+                    isOpen={startSessionModalData.isOpen}
+                    onClose={() => setStartSessionModalData(null)}
+                    onConfirm={handleStartSessionConfirm}
+                    tableName={startSessionModalData.tableName}
+                />
+            )}
+
             {billingModalData && (
                 <BillingModal
                     isOpen={billingModalData.isOpen}
                     onClose={() => setBillingModalData(null)}
                     onConfirm={handleConfirmBilling}
                     sessionData={{
+                        id: billingModalData.sessionId,
                         startTime: billingModalData.startTime,
                         hourlyRate: billingModalData.hourlyRate,
                         tableName: billingModalData.tableName

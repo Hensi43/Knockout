@@ -9,8 +9,10 @@ To get your Snooker Club Management app running, you need to connect it to a Sup
 ## 2. Initialize the Database
 1. In your Supabase Dashboard, go to the **SQL Editor**.
 2. Create a **New Query**.
-3. Copy the contents of the local file [schema.sql](file:///Users/hensi/Desktop/PROJECTS%20Tech/Snooker%20Management/supabase/schema.sql) and paste them into the SQL Editor.
-4. Click **Run**. This will create the tables, roles, and security policies (RLS).
+3. Copy/Paste the contents of [schema.sql](file:///Users/hensi/Desktop/PROJECTS%20Tech/Snooker%20Management/supabase/schema.sql) and click **Run**.
+4. Create another **New Query**.
+5. Copy/Paste the contents of [triggers.sql](file:///Users/hensi/Desktop/PROJECTS%20Tech/Snooker%20Management/supabase/triggers.sql) and click **Run**.
+   - These triggers automatically create user profiles in the `public.users` table when someone signs up.
 
 ## 3. Configure Environment Variables
 1. Go to **Project Settings > API**.
@@ -23,19 +25,15 @@ To get your Snooker Club Management app running, you need to connect it to a Sup
    ```
 
 ## 4. Create your First User (Owner)
-1. Go to **Authentication > Users** in Supabase.
-2. Click **Add User** and create an account with your email.
-3. Once created, go back to the **SQL Editor** and run this command:
+1. Go to your app's `/login` page and sign up for a new account using your email.
+2. Go back to the **SQL Editor** in Supabase and run this command:
    ```sql
-   -- 1. Ensure the email column exists
-   ALTER TABLE public.users ADD COLUMN IF NOT EXISTS email TEXT;
-
-   -- 2. If the update below says "0 rows affected", run this manual insert:
-   -- (Get your ID from Authentication > Users)
-   INSERT INTO public.users (id, email, role)
-   VALUES ('YOUR_ID_HERE', 'hensibaghel43@gmail.com', 'owner')
-   ON CONFLICT (id) DO UPDATE SET role = 'owner', email = 'hensibaghel43@gmail.com';
+   -- This promotes your account to "owner" so you have full permissions
+   UPDATE public.users 
+   SET role = 'owner' 
+   WHERE email = 'hensibaghel43@gmail.com'; 
    ```
+   - *Note: Replace the email with the one you signed up with.*
 
 ## 5. Run the App
 ```bash

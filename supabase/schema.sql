@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS public.sessions (
     end_time TIMESTAMP WITH TIME ZONE,
     total_amount DECIMAL(10, 2) DEFAULT 0.00,
     discount_amount DECIMAL(10, 2) DEFAULT 0.00,
+    player_count INTEGER DEFAULT 1,
     status TEXT DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
@@ -65,3 +66,35 @@ CREATE POLICY "All authenticated users can manage sessions" ON public.sessions F
 
 -- Payments: Everyone authenticated can manage payments
 CREATE POLICY "All authenticated users can manage payments" ON public.payments FOR ALL TO authenticated USING (true);
+
+-- Products/Snacks Table
+CREATE TABLE IF NOT EXISTS public.products (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    category TEXT DEFAULT 'snack',
+    stock INTEGER DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Order Items Table
+CREATE TABLE IF NOT EXISTS public.order_items (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    session_id UUID REFERENCES public.sessions ON DELETE CASCADE NOT NULL,
+    product_id UUID REFERENCES public.products ON DELETE SET NULL,
+    quantity INTEGER DEFAULT 1,
+    price_at_time DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Enable RLS for new tables
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.order_items ENABLE ROW LEVEL SECURITY;
+
+-- Policies for new tables
+CREATE POLICY "Everyone can view products" ON public.products FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Owners can manage products" ON public.products FOR ALL USING (
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'owner')
+);
+
+CREATE POLICY "All authenticated can manage order items" ON public.order_items FOR ALL TO authenticated USING (true);
