@@ -1,0 +1,161 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import DashboardLayout from "@/components/layout/dashboard-layout";
+import { TableCard } from "@/components/tables/table-card";
+import { tableService } from "@/services/table-service";
+import { sessionService } from "@/services/session-service";
+import { SnookerTable, Session } from "@/types/database";
+import { Button } from "@/components/ui/button";
+import { Plus } from "lucide-react";
+import { motion } from "framer-motion";
+import { AddTableModal } from "@/components/tables/add-table-modal";
+import { BillingModal } from "@/components/billing/billing-modal";
+
+export default function TablesPage() {
+    const [tables, setTables] = useState<SnookerTable[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [billingModalData, setBillingModalData] = useState<{
+        isOpen: boolean;
+        tableId: string;
+        tableName: string;
+        hourlyRate: number;
+        startTime: string;
+        sessionId: string;
+    } | null>(null);
+
+    useEffect(() => {
+        fetchTables();
+    }, []);
+
+    const fetchTables = async () => {
+        try {
+            const data = await tableService.getTables();
+            setTables(data);
+        } catch (error) {
+            console.error("Error fetching tables:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleAddTable = async (name: string, rate: number) => {
+        try {
+            await tableService.createTable(name, rate);
+            setIsAddModalOpen(false);
+            fetchTables();
+        } catch (error) {
+            console.error("Error adding table:", error);
+        }
+    };
+
+    const handleStartSession = async (tableId: string) => {
+        try {
+            await sessionService.startSession(tableId);
+            fetchTables();
+        } catch (error) {
+            console.error("Error starting session:", error);
+        }
+    };
+
+    const handleStopSessionClick = async (tableId: string) => {
+        try {
+            const activeSessions = await sessionService.getActiveSessions();
+            const session = activeSessions.find(s => s.table_id === tableId);
+            const table = tables.find(t => t.id === tableId);
+
+            if (session && table) {
+                setBillingModalData({
+                    isOpen: true,
+                    tableId,
+                    tableName: table.name,
+                    hourlyRate: table.hourly_rate,
+                    startTime: session.start_time,
+                    sessionId: session.id
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching active session:", error);
+        }
+    };
+
+    const handleConfirmBilling = async (total: number, discount: number) => {
+        if (!billingModalData) return;
+
+        try {
+            await sessionService.endSession(
+                billingModalData.sessionId,
+                billingModalData.tableId,
+                total,
+                discount
+            );
+            setBillingModalData(null);
+            fetchTables();
+        } catch (error) {
+            console.error("Error ending session:", error);
+        }
+    };
+
+    return (
+        <DashboardLayout>
+            <div className="flex justify-between items-end mb-10">
+                <div>
+                    <h1 className="text-3xl font-bold gold-text-gradient">Snooker Tables</h1>
+                    <p className="text-muted-foreground mt-1">Manage and monitor all tables in real-time.</p>
+                </div>
+                <Button className="flex items-center gap-2" onClick={() => setIsAddModalOpen(true)}>
+                    <Plus size={18} /> Add New Table
+                </Button>
+            </div>
+
+            {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {[1, 2, 3].map(i => (
+                        <div key={i} className="glass-card h-80 animate-pulse rounded-2xl" />
+                    ))}
+                </div>
+            ) : (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+                >
+                    {tables.map((table) => (
+                        <TableCard
+                            key={table.id}
+                            table={table}
+                            onStartSession={handleStartSession}
+                            onStopSession={handleStopSessionClick}
+                        />
+                    ))}
+
+                    {tables.length === 0 && (
+                        <div className="col-span-full py-20 text-center glass-card rounded-2xl border-dashed border-white/10">
+                            <p className="text-muted-foreground">No tables found. Add your first table to get started.</p>
+                        </div>
+                    )}
+                </motion.div>
+            )}
+
+            <AddTableModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onConfirm={handleAddTable}
+            />
+
+            {billingModalData && (
+                <BillingModal
+                    isOpen={billingModalData.isOpen}
+                    onClose={() => setBillingModalData(null)}
+                    onConfirm={handleConfirmBilling}
+                    sessionData={{
+                        startTime: billingModalData.startTime,
+                        hourlyRate: billingModalData.hourlyRate,
+                        tableName: billingModalData.tableName
+                    }}
+                />
+            )}
+        </DashboardLayout>
+    );
+}
