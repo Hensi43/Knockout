@@ -1,4 +1,6 @@
 import DashboardLayout from "@/components/layout/dashboard-layout";
+import Link from "next/link";
+import { Plus, FileText, Settings } from "lucide-react";
 
 export default function DashboardPage() {
     return (
@@ -33,9 +35,15 @@ export default function DashboardPage() {
                 <div className="glass-card p-6 rounded-2xl h-fit">
                     <h3 className="text-lg font-semibold mb-6">Quick Actions</h3>
                     <div className="space-y-4">
-                        <button className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium">Add New Table</button>
-                        <button className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium">Generate Daily Report</button>
-                        <button className="w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium">Settings</button>
+                        <Link href="/dashboard/tables" className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium">
+                            <Plus size={16} /> Add New Table
+                        </Link>
+                        <Link href="/dashboard/reports" className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium">
+                            <FileText size={16} /> Generate Daily Report
+                        </Link>
+                        <Link href="/dashboard/settings" className="flex items-center justify-center gap-2 w-full py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-sm font-medium">
+                            <Settings size={16} /> Settings
+                        </Link>
                     </div>
                 </div>
             </div>

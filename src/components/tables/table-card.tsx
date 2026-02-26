@@ -21,7 +21,7 @@ export function TableCard({ table, onStartSession, onStopSession }: TableCardPro
                 <div className="flex justify-between items-start mb-6">
                     <div>
                         <h3 className="text-xl font-bold text-white group-hover:gold-text-gradient transition-all">{table.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">₹3.5/min</p>
+                        <p className="text-sm text-muted-foreground mt-1">₹{table.hourly_rate}/hr</p>
                     </div>
                     <div className={cn(
                         "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",
@@ -61,7 +61,12 @@ export function TableCard({ table, onStartSession, onStopSession }: TableCardPro
                             <Play size={16} className="mr-2" /> Start Session
                         </Button>
                     )}
-                    <Button variant="ghost" size="sm" className="px-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="px-2"
+                        onClick={() => alert("More options coming soon!")}
+                    >
                         <MoreVertical size={16} />
                     </Button>
                 </div>
