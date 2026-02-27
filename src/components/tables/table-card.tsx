@@ -1,18 +1,57 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
-import { SnookerTable } from "@/types/database";
-import { Circle, Play, StopCircle, MoreVertical } from "lucide-react";
+import { SnookerTable, Session } from "@/types/database";
+import { Circle, Play, StopCircle, MoreVertical, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface TableCardProps {
     table: SnookerTable;
+    activeSession?: Session;
     onStartSession: (tableId: string) => void;
     onStopSession: (tableId: string) => void;
 }
 
-export function TableCard({ table, onStartSession, onStopSession }: TableCardProps) {
+function LiveSessionTimer({ activeSession, hourlyRate }: { activeSession: Session; hourlyRate: number }) {
+    const [elapsedMs, setElapsedMs] = useState<number>(0);
+
+    useEffect(() => {
+        const calculateElapsed = () => {
+            const start = new Date(activeSession.start_time).getTime();
+            const now = Date.now();
+            setElapsedMs(Math.max(0, now - start));
+        };
+
+        calculateElapsed(); // Initial calculation
+        const interval = setInterval(calculateElapsed, 1000);
+
+        return () => clearInterval(interval);
+    }, [activeSession.start_time]);
+
+    const hours = Math.floor(elapsedMs / (1000 * 60 * 60));
+    const minutes = Math.floor((elapsedMs % (1000 * 60 * 60)) / (1000 * 60));
+
+    // Calculate cost based on exact milliseconds elapsed
+    const cost = (elapsedMs / (1000 * 60 * 60)) * hourlyRate;
+
+    return (
+        <div className="flex flex-col gap-1 mt-2">
+            <div className="flex items-center gap-1 text-sm font-medium text-amber-400">
+                <Clock size={14} />
+                <span>
+                    {hours > 0 ? `${hours}h ` : ''}{minutes}m
+                </span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+                Current: <span className="text-green-400 font-medium">₹{cost.toFixed(2)}</span>
+            </div>
+        </div>
+    );
+}
+
+export function TableCard({ table, activeSession, onStartSession, onStopSession }: TableCardProps) {
     const isOccupied = table.status === 'occupied';
 
     return (
@@ -21,7 +60,10 @@ export function TableCard({ table, onStartSession, onStopSession }: TableCardPro
                 <div className="flex justify-between items-start mb-6">
                     <div>
                         <h3 className="text-xl font-bold text-white group-hover:gold-text-gradient transition-all">{table.name}</h3>
-                        <p className="text-sm text-muted-foreground mt-1">₹{table.hourly_rate}/hr</p>
+                        {!isOccupied && <p className="text-sm text-muted-foreground mt-1">₹{table.hourly_rate}/hr</p>}
+                        {isOccupied && activeSession && (
+                            <LiveSessionTimer activeSession={activeSession} hourlyRate={table.hourly_rate} />
+                        )}
                     </div>
                     <div className={cn(
                         "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider",

@@ -15,6 +15,7 @@ import { StartSessionModal } from "@/components/tables/start-session-modal";
 
 export default function TablesPage() {
     const [tables, setTables] = useState<SnookerTable[]>([]);
+    const [activeSessions, setActiveSessions] = useState<Session[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [startSessionModalData, setStartSessionModalData] = useState<{
@@ -37,10 +38,14 @@ export default function TablesPage() {
 
     const fetchTables = async () => {
         try {
-            const data = await tableService.getTables();
-            setTables(data);
+            const [tablesData, sessionsData] = await Promise.all([
+                tableService.getTables(),
+                sessionService.getActiveSessions()
+            ]);
+            setTables(tablesData);
+            setActiveSessions(sessionsData);
         } catch (error) {
-            console.error("Error fetching tables:", error);
+            console.error("Error fetching data:", error);
         } finally {
             setLoading(false);
         }
@@ -80,8 +85,8 @@ export default function TablesPage() {
 
     const handleStopSessionClick = async (tableId: string) => {
         try {
-            const activeSessions = await sessionService.getActiveSessions();
-            const session = activeSessions.find(s => s.table_id === tableId);
+            const activeSessionsObj = await sessionService.getActiveSessions();
+            const session = activeSessionsObj.find(s => s.table_id === tableId);
             const table = tables.find(t => t.id === tableId);
 
             if (session && table) {
@@ -144,6 +149,7 @@ export default function TablesPage() {
                         <TableCard
                             key={table.id}
                             table={table}
+                            activeSession={activeSessions.find(s => s.table_id === table.id)}
                             onStartSession={handleStartSessionClick}
                             onStopSession={handleStopSessionClick}
                         />
