@@ -2,9 +2,6 @@ import { supabase } from '@/lib/supabase';
 
 export const reportService = {
     async getDailyRevenue() {
-        if (process.env.NEXT_PUBLIC_MOCK_MODE === 'true') {
-            return 12500.00;
-        }
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
@@ -19,9 +16,6 @@ export const reportService = {
     },
 
     async getMonthlyRevenue() {
-        if (process.env.NEXT_PUBLIC_MOCK_MODE === 'true') {
-            return 375000.00;
-        }
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
@@ -37,9 +31,6 @@ export const reportService = {
     },
 
     async getMostUsedTable() {
-        if (process.env.NEXT_PUBLIC_MOCK_MODE === 'true') {
-            return { name: 'Table 1', count: 42 };
-        }
         const { data, error } = await supabase
             .from('sessions')
             .select('table_id, snooker_tables(name)')

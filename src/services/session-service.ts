@@ -4,19 +4,6 @@ import { tableService } from './table-service';
 
 export const sessionService = {
     async startSession(tableId: string, playerCount: number = 1, userId: string | null = null) {
-        if (process.env.NEXT_PUBLIC_MOCK_MODE === 'true') {
-            return {
-                id: Math.random().toString(36).substr(2, 9),
-                table_id: tableId,
-                user_id: userId,
-                start_time: new Date().toISOString(),
-                status: 'active',
-                player_count: playerCount,
-                total_amount: 0,
-                discount_amount: 0,
-                created_at: new Date().toISOString()
-            } as Session;
-        }
         const { data, error } = await supabase
             .from('sessions')
             .insert([{
@@ -54,26 +41,6 @@ export const sessionService = {
     },
 
     async getActiveSessions() {
-        if (process.env.NEXT_PUBLIC_MOCK_MODE === 'true') {
-            return [
-                {
-                    id: 's1',
-                    table_id: '1',
-                    start_time: new Date(Date.now() - 3600000).toISOString(),
-                    status: 'active',
-                    player_count: 2,
-                    snooker_tables: { name: 'Table 1', hourly_rate: 210 }
-                },
-                {
-                    id: 's2',
-                    table_id: '4',
-                    start_time: new Date(Date.now() - 1800000).toISOString(),
-                    status: 'active',
-                    player_count: 1,
-                    snooker_tables: { name: 'Table 4', hourly_rate: 210 }
-                }
-            ];
-        }
         const { data, error } = await supabase
             .from('sessions')
             .select('*, snooker_tables(name, hourly_rate)')

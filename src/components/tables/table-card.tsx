@@ -32,6 +32,7 @@ function LiveSessionTimer({ activeSession, hourlyRate }: { activeSession: Sessio
 
     const hours = Math.floor(elapsedMs / (1000 * 60 * 60));
     const minutes = Math.floor((elapsedMs % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((elapsedMs % (1000 * 60)) / 1000);
 
     // Calculate cost based on exact milliseconds elapsed
     const cost = (elapsedMs / (1000 * 60 * 60)) * hourlyRate;
@@ -40,8 +41,8 @@ function LiveSessionTimer({ activeSession, hourlyRate }: { activeSession: Sessio
         <div className="flex flex-col gap-1 mt-2">
             <div className="flex items-center gap-1 text-sm font-medium text-amber-400">
                 <Clock size={14} />
-                <span>
-                    {hours > 0 ? `${hours}h ` : ''}{minutes}m
+                <span className="tabular-nums">
+                    {hours > 0 ? `${hours}h ` : ''}{String(minutes).padStart(2, '0')}m {String(seconds).padStart(2, '0')}s
                 </span>
             </div>
             <div className="text-xs text-muted-foreground">
