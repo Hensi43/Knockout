@@ -1,51 +1,40 @@
-import { supabase } from '@/lib/supabase';
-import { createClient } from '@supabase/supabase-js';
 import { SnookerTable } from '@/types/database';
 
 export const tableService = {
     async getTables() {
-        const { data, error } = await supabase
-            .from('snooker_tables')
-            .select('*')
-            .order('name', { ascending: true });
-
-        if (error) throw error;
-        return data as SnookerTable[];
+        const res = await fetch('/api/tables');
+        if (!res.ok) throw new Error('Failed to fetch tables');
+        return res.json() as Promise<SnookerTable[]>;
     },
 
     async createTable(name: string, hourlyRate: number) {
-        let client = supabase;
-        if (process.env.NEXT_PUBLIC_MOCK_MODE === 'true') {
-            client = createClient(
-                process.env.NEXT_PUBLIC_SUPABASE_URL!,
-                process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY!
-            );
-        }
-
-        const { data, error } = await client
-            .from('snooker_tables')
-            .insert([{ name, hourly_rate: hourlyRate, status: 'available' }])
-            .select();
-
-        if (error) throw error;
-        return data[0];
+        const res = await fetch('/api/tables', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, hourlyRate })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to create table');
+        return data as SnookerTable;
     },
 
     async updateTableStatus(id: string, status: 'available' | 'occupied') {
-        const { error } = await supabase
-            .from('snooker_tables')
-            .update({ status })
-            .eq('id', id);
-
-        if (error) throw error;
+        const res = await fetch(`/api/tables/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update table status');
     },
 
     async deleteTable(id: string) {
-        const { error } = await supabase
-            .from('snooker_tables')
-            .delete()
-            .eq('id', id);
-
-        if (error) throw error;
+        const res = await fetch(`/api/tables/${id}`, {
+            method: 'DELETE'
+        });
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Failed to delete table');
+        }
     }
 };

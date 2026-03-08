@@ -7,12 +7,14 @@ import { reportService } from "@/services/report-service";
 import { BarChart3, TrendingUp, Calendar, Trophy, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function ReportsPage() {
     const [stats, setStats] = useState({
         daily: 0,
         monthly: 0,
         mostUsed: { name: 'N/A', count: 0 },
+        revenueStats: [],
         loading: true
     });
 
@@ -25,7 +27,8 @@ export default function ReportsPage() {
             const daily = await reportService.getDailyRevenue();
             const monthly = await reportService.getMonthlyRevenue();
             const mostUsed = await reportService.getMostUsedTable();
-            setStats({ daily, monthly, mostUsed, loading: false });
+            const revenueStats = await reportService.getRevenueStats();
+            setStats({ daily, monthly, mostUsed, revenueStats, loading: false });
         } catch (error) {
             console.error("Error fetching stats:", error);
             setStats(prev => ({ ...prev, loading: false }));
@@ -53,7 +56,7 @@ export default function ReportsPage() {
                             </div>
                             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Today's Revenue</span>
                         </div>
-                        <h2 className="text-4xl font-black text-white">₹{stats.daily.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                        <h2 className="text-4xl font-black text-white">₹{(stats.daily || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
                         <p className="text-xs text-green-400 mt-2 font-medium">+12% from yesterday</p>
                     </GlassCard>
                 </motion.div>
@@ -66,7 +69,7 @@ export default function ReportsPage() {
                             </div>
                             <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Monthly Revenue</span>
                         </div>
-                        <h2 className="text-4xl font-black text-white">₹{stats.monthly.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                        <h2 className="text-4xl font-black text-white">₹{(stats.monthly || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
                         <p className="text-xs text-blue-400 mt-2 font-medium">Progress: 85% of target</p>
                     </GlassCard>
                 </motion.div>
@@ -88,22 +91,53 @@ export default function ReportsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <GlassCard className="p-8 min-h-[400px]">
                     <h3 className="text-lg font-bold mb-6 flex items-center gap-2">
-                        <BarChart3 size={20} className="text-primary" /> Revenue Growth
+                        <BarChart3 size={20} className="text-primary" /> Revenue Growth (Last 30 Days)
                     </h3>
-                    <div className="h-64 flex items-end gap-3 px-4">
-                        {[40, 60, 45, 90, 65, 80, 55, 70, 85, 95].map((h, i) => (
-                            <div
-                                key={i}
-                                className="flex-1 bg-gradient-to-t from-primary/20 to-primary/60 rounded-t-md transition-all hover:to-primary"
-                                style={{ height: `${h}%` }}
-                            />
-                        ))}
-                    </div>
-                    <div className="flex justify-between mt-4 px-4 text-[10px] text-muted-foreground uppercase font-bold tracking-widest">
-                        <span>Week 1</span>
-                        <span>Week 2</span>
-                        <span>Week 3</span>
-                        <span>Week 4</span>
+                    <div className="h-72 w-full mt-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={stats.revenueStats} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                                <defs>
+                                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#d4af37" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#d4af37" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <XAxis
+                                    dataKey="date"
+                                    stroke="#525252"
+                                    fontSize={12}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickFormatter={(val) => {
+                                        const d = new Date(val);
+                                        return `${d.getDate()}/${d.getMonth() + 1}`;
+                                    }}
+                                />
+                                <YAxis
+                                    stroke="#525252"
+                                    fontSize={12}
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tickFormatter={(val) => `₹${val}`}
+                                />
+                                <CartesianGrid strokeDasharray="3 3" stroke="#ffffff10" vertical={false} />
+                                <Tooltip
+                                    contentStyle={{ backgroundColor: '#111', borderColor: '#333', borderRadius: '8px' }}
+                                    itemStyle={{ color: '#d4af37' }}
+                                    labelStyle={{ color: '#888' }}
+                                    formatter={(value: any) => [`₹${value || 0}`, 'Revenue']}
+                                    labelFormatter={(label) => new Date(label).toLocaleDateString()}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="revenue"
+                                    stroke="#d4af37"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorRevenue)"
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
                     </div>
                 </GlassCard>
 

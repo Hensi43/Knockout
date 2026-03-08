@@ -10,7 +10,8 @@ import {
     BarChart3,
     Settings,
     LogOut,
-    ChevronRight
+    ChevronRight,
+    Package
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
@@ -18,6 +19,7 @@ const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Tables", href: "/dashboard/tables", icon: TableIcon },
     { name: "Active Sessions", href: "/dashboard/sessions", icon: Clock },
+    { name: "Inventory", href: "/dashboard/inventory", icon: Package },
     { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];

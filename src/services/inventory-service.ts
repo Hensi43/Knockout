@@ -1,31 +1,40 @@
-import { supabase } from '@/lib/supabase';
-import { Product, OrderItem } from '@/types/database';
+import { Product } from "@/types/database";
 
 export const inventoryService = {
-    async getProducts() {
-        const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .order('name');
-        if (error) throw error;
-        return data as Product[];
+    async getProducts(): Promise<Product[]> {
+        const res = await fetch('/api/inventory');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to fetch products');
+        return data;
     },
 
-    async addOrderItem(sessionId: string, productId: string, quantity: number, price: number) {
-        const { data, error } = await supabase
-            .from('order_items')
-            .insert([{ session_id: sessionId, product_id: productId, quantity, price_at_time: price }])
-            .select();
-        if (error) throw error;
-        return data[0];
+    async addProduct(product: Partial<Product>): Promise<Product> {
+        const res = await fetch('/api/inventory', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(product),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to add product');
+        return data;
     },
 
-    async getSessionOrders(sessionId: string) {
-        const { data, error } = await supabase
-            .from('order_items')
-            .select('*, products(*)')
-            .eq('session_id', sessionId);
-        if (error) throw error;
-        return data as OrderItem[];
+    async updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
+        const res = await fetch(`/api/inventory/${id}`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(updates),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to update product');
+        return data;
+    },
+
+    async deleteProduct(id: string): Promise<void> {
+        const res = await fetch(`/api/inventory/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Failed to delete product');
+        }
     }
 };

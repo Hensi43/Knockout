@@ -1,8 +1,36 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import Link from "next/link";
 import { Plus, FileText, Settings } from "lucide-react";
+import { reportService } from "@/services/report-service";
+import { GlassCard } from "@/components/ui/glass-card";
 
 export default function DashboardPage() {
+    const [stats, setStats] = useState({
+        activeTables: 0,
+        totalTables: 0,
+        revenueToday: 0,
+        ongoingSessions: 0,
+        averageSessionDuration: 0,
+        loading: true
+    });
+
+    useEffect(() => {
+        fetchDashboardStats();
+    }, []);
+
+    const fetchDashboardStats = async () => {
+        try {
+            const data = await reportService.getDashboardStats();
+            setStats({ ...data, loading: false });
+        } catch (error) {
+            console.error("Failed to fetch dashboard stats", error);
+            setStats(prev => ({ ...prev, loading: false }));
+        }
+    };
+
     return (
         <DashboardLayout>
             <div className="mb-8">
@@ -11,18 +39,30 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-                {/* Stats cards will go here */}
-                {[
-                    { label: "Active Tables", value: "8 / 12", color: "text-blue-400" },
-                    { label: "Revenue Today", value: "₹42,050", color: "text-green-400" },
-                    { label: "Ongoing Sessions", value: "6", color: "text-primary" },
-                    { label: "Average Duration", value: "1h 20m", color: "text-purple-400" },
-                ].map((stat, i) => (
-                    <div key={i} className="glass-card p-6 rounded-2xl border border-white/5">
-                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">{stat.label}</p>
-                        <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
-                    </div>
-                ))}
+                {stats.loading ? (
+                    [1, 2, 3, 4].map(i => <div key={i} className="glass-card p-6 h-24 rounded-2xl animate-pulse" />)
+                ) : (
+                    <>
+                        <GlassCard className="p-6 rounded-2xl border border-white/5">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Active Tables</p>
+                            <p className="text-2xl font-bold text-blue-400">{stats.activeTables} / {stats.totalTables}</p>
+                        </GlassCard>
+                        <GlassCard className="p-6 rounded-2xl border border-white/5">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Revenue Today</p>
+                            <p className="text-2xl font-bold text-green-400">₹{(stats.revenueToday || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                        </GlassCard>
+                        <GlassCard className="p-6 rounded-2xl border border-white/5">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Ongoing Sessions</p>
+                            <p className="text-2xl font-bold text-primary">{stats.ongoingSessions}</p>
+                        </GlassCard>
+                        <GlassCard className="p-6 rounded-2xl border border-white/5">
+                            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Average Duration</p>
+                            <p className="text-2xl font-bold text-purple-400">
+                                {Math.floor((stats.averageSessionDuration || 0) / 60)}h {(stats.averageSessionDuration || 0) % 60}m
+                            </p>
+                        </GlassCard>
+                    </>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

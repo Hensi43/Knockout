@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { AddTableModal } from "@/components/tables/add-table-modal";
 import { BillingModal } from "@/components/billing/billing-modal";
 import { StartSessionModal } from "@/components/tables/start-session-modal";
+import { ReceiptModal, ReceiptData } from "@/components/tables/receipt-modal";
 
 export default function TablesPage() {
     const [tables, setTables] = useState<SnookerTable[]>([]);
@@ -30,6 +31,11 @@ export default function TablesPage() {
         hourlyRate: number;
         startTime: string;
         sessionId: string;
+    } | null>(null);
+
+    const [receiptData, setReceiptData] = useState<{
+        receipt: ReceiptData;
+        tableName: string;
     } | null>(null);
 
     useEffect(() => {
@@ -86,7 +92,7 @@ export default function TablesPage() {
     const handleStopSessionClick = async (tableId: string) => {
         try {
             const activeSessionsObj = await sessionService.getActiveSessions();
-            const session = activeSessionsObj.find(s => s.table_id === tableId);
+            const session = activeSessionsObj.find((s: Session) => s.table_id === tableId);
             const table = tables.find(t => t.id === tableId);
 
             if (session && table) {
@@ -108,12 +114,18 @@ export default function TablesPage() {
         if (!billingModalData) return;
 
         try {
-            await sessionService.endSession(
+            const receipt = await sessionService.endSession(
                 billingModalData.sessionId,
                 billingModalData.tableId,
                 total,
                 discount
             );
+
+            setReceiptData({
+                receipt: receipt,
+                tableName: billingModalData.tableName
+            });
+
             setBillingModalData(null);
             fetchTables();
         } catch (error) {
@@ -189,6 +201,14 @@ export default function TablesPage() {
                         hourlyRate: billingModalData.hourlyRate,
                         tableName: billingModalData.tableName
                     }}
+                />
+            )}
+
+            {receiptData && (
+                <ReceiptModal
+                    receipt={receiptData.receipt}
+                    tableName={receiptData.tableName}
+                    onClose={() => setReceiptData(null)}
                 />
             )}
         </DashboardLayout>

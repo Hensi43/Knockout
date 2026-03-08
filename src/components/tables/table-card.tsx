@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { SnookerTable, Session } from "@/types/database";
-import { Circle, Play, StopCircle, MoreVertical, Clock } from "lucide-react";
+import { Circle, Play, StopCircle, MoreVertical, Clock, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AddSnackModal } from "./add-snack-modal";
 
 interface TableCardProps {
     table: SnookerTable;
@@ -54,6 +55,7 @@ function LiveSessionTimer({ activeSession, hourlyRate }: { activeSession: Sessio
 
 export function TableCard({ table, activeSession, onStartSession, onStopSession }: TableCardProps) {
     const isOccupied = table.status === 'occupied';
+    const [showSnackModal, setShowSnackModal] = useState(false);
 
     return (
         <GlassCard className="group relative">
@@ -88,13 +90,22 @@ export function TableCard({ table, activeSession, onStartSession, onStopSession 
 
                 <div className="flex gap-3">
                     {isOccupied ? (
-                        <Button
-                            variant="outline"
-                            className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10"
-                            onClick={() => onStopSession(table.id)}
-                        >
-                            <StopCircle size={16} className="mr-2" /> Stop Session
-                        </Button>
+                        <>
+                            <Button
+                                variant="outline"
+                                className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10"
+                                onClick={() => onStopSession(table.id)}
+                            >
+                                <StopCircle size={16} className="mr-2" /> Stop
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="flex-1 border-primary/50 text-primary hover:bg-primary/10"
+                                onClick={() => setShowSnackModal(true)}
+                            >
+                                <Plus size={16} className="mr-2" /> Snack
+                            </Button>
+                        </>
                     ) : (
                         <Button
                             variant="primary"
@@ -114,6 +125,16 @@ export function TableCard({ table, activeSession, onStartSession, onStopSession 
                     </Button>
                 </div>
             </div>
+
+            {showSnackModal && activeSession && (
+                <AddSnackModal
+                    sessionId={activeSession.id}
+                    onClose={() => setShowSnackModal(false)}
+                    onAdded={() => {
+                        // In a real app we might refetch or show a success toast here
+                    }}
+                />
+            )}
         </GlassCard>
     );
 }
