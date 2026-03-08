@@ -36,7 +36,7 @@ export async function POST(request: Request) {
         const elapsedMs = Math.max(0, now - start);
         const hours = elapsedMs / (1000 * 60 * 60);
 
-        let totalCost = hours * tableData.hourly_rate;
+        const totalCost = hours * tableData.hourly_rate;
 
         const { data: orderItems, error: ordersError } = await supabase
             .from('order_items')
