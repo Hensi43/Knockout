@@ -125,3 +125,29 @@ CREATE POLICY "Owners can read all shifts" ON public.staff_shifts FOR SELECT USI
 );
 CREATE POLICY "Users can insert their own shifts" ON public.staff_shifts FOR INSERT WITH CHECK (auth.uid() = user_id);
 CREATE POLICY "Users can update their own shifts" ON public.staff_shifts FOR UPDATE USING (auth.uid() = user_id);
+
+-- Khata (Ledger) Management
+CREATE TABLE IF NOT EXISTS public.khata_accounts (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    player_name TEXT NOT NULL,
+    phone TEXT,
+    total_due DECIMAL(10, 2) DEFAULT 0.00,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.khata_transactions (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    account_id UUID REFERENCES public.khata_accounts(id) ON DELETE CASCADE NOT NULL,
+    session_id UUID REFERENCES public.sessions(id) ON DELETE SET NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    type TEXT CHECK (type IN ('CREDIT', 'SETTLEMENT')), -- CREDIT adds to due, SETTLEMENT reduces due
+    description TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+ALTER TABLE public.khata_accounts ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.khata_transactions ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "All authenticated users can manage khata accounts" ON public.khata_accounts FOR ALL TO authenticated USING (true);
+CREATE POLICY "All authenticated users can manage khata transactions" ON public.khata_transactions FOR ALL TO authenticated USING (true);
+
