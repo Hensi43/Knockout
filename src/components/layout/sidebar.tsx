@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
@@ -14,6 +15,7 @@ import {
     Package
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
+import { EndShiftModal } from "@/components/features/shifts/end-shift-modal";
 
 const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -27,10 +29,31 @@ const navItems = [
 export function Sidebar() {
     const pathname = usePathname();
     const supabase = createSupabaseBrowserClient();
+    const [showEndShift, setShowEndShift] = useState(false);
+    const [currentShiftId, setCurrentShiftId] = useState("");
 
     const handleLogout = async () => {
         await supabase.auth.signOut();
         window.location.href = "/login";
+    };
+
+    const handleEndShiftClick = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            try {
+                const res = await fetch(`/api/shifts/current?userId=${user.id}`);
+                const shift = await res.json();
+                if (shift && shift.id && !shift.error) {
+                    setCurrentShiftId(shift.id);
+                    setShowEndShift(true);
+                    return;
+                }
+            } catch (err) {
+                console.error("Error fetching shift", err);
+            }
+        }
+        // Fallback if no active shift
+        handleLogout();
     };
 
     return (
@@ -68,13 +91,20 @@ export function Sidebar() {
 
             <div className="mt-auto pt-6 border-t border-white/5">
                 <button
-                    onClick={handleLogout}
+                    onClick={handleEndShiftClick}
                     className="flex items-center gap-3 px-4 py-3 w-full rounded-xl text-muted-foreground hover:bg-red-500/10 hover:text-red-400 transition-all text-left"
                 >
                     <LogOut size={18} />
-                    <span className="text-sm font-medium">Log out</span>
+                    <span className="text-sm font-medium">End Shift & Logout</span>
                 </button>
             </div>
+
+            <EndShiftModal
+                isOpen={showEndShift}
+                onClose={() => setShowEndShift(false)}
+                shiftId={currentShiftId}
+                onSuccess={handleLogout}
+            />
         </div>
     );
 }

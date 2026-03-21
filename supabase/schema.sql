@@ -98,3 +98,30 @@ CREATE POLICY "Owners can manage products" ON public.products FOR ALL USING (
 );
 
 CREATE POLICY "All authenticated can manage order items" ON public.order_items FOR ALL TO authenticated USING (true);
+
+-- Staff Shifts Table
+CREATE TABLE IF NOT EXISTS public.staff_shifts (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    user_id UUID REFERENCES public.users(id) ON DELETE CASCADE NOT NULL,
+    start_time TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    end_time TIMESTAMP WITH TIME ZONE,
+    starting_cash DECIMAL(10, 2) DEFAULT 0.00 NOT NULL,
+    declared_cash DECIMAL(10, 2),
+    expected_system_cash DECIMAL(10, 2),
+    status TEXT DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE', 'CLOSED')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+-- Prevent a user from having multiple active shifts simultaneously
+CREATE UNIQUE INDEX IF NOT EXISTS one_active_shift_per_user ON public.staff_shifts (user_id) WHERE status = 'ACTIVE';
+
+-- Enable RLS for staff_shifts
+ALTER TABLE public.staff_shifts ENABLE ROW LEVEL SECURITY;
+
+-- Policies for staff_shifts
+CREATE POLICY "Users can read their own shifts" ON public.staff_shifts FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Owners can read all shifts" ON public.staff_shifts FOR SELECT USING (
+    EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'owner')
+);
+CREATE POLICY "Users can insert their own shifts" ON public.staff_shifts FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own shifts" ON public.staff_shifts FOR UPDATE USING (auth.uid() = user_id);
