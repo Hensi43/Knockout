@@ -98,3 +98,16 @@ CREATE POLICY "Owners can manage products" ON public.products FOR ALL USING (
 );
 
 CREATE POLICY "All authenticated can manage order items" ON public.order_items FOR ALL TO authenticated USING (true);
+
+-- Customers (CRM)
+CREATE TABLE IF NOT EXISTS public.customers (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    phone TEXT UNIQUE NOT NULL,
+    total_visits INTEGER DEFAULT 1,
+    last_visit TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "All authenticated users can manage customers" ON public.customers FOR ALL TO authenticated USING (true);

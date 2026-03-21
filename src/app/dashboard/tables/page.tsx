@@ -110,7 +110,7 @@ export default function TablesPage() {
         }
     };
 
-    const handleConfirmBilling = async (total: number, discount: number) => {
+    const handleConfirmBilling = async (total: number, discount: number, customer?: { name: string, phone: string, sendReceipt: boolean }) => {
         if (!billingModalData) return;
 
         try {
@@ -120,6 +120,22 @@ export default function TablesPage() {
                 total,
                 discount
             );
+
+            if (customer && customer.sendReceipt && customer.phone) {
+                try {
+                    await fetch('/api/whatsapp/receipt', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            phone: customer.phone,
+                            name: customer.name || 'Player',
+                            sessionData: { total_amount: total }
+                        })
+                    });
+                } catch (err) {
+                    console.error("Failed to send WhatsApp receipt", err);
+                }
+            }
 
             setReceiptData({
                 receipt: receipt,
