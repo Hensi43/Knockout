@@ -151,3 +151,15 @@ ALTER TABLE public.khata_transactions ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "All authenticated users can manage khata accounts" ON public.khata_accounts FOR ALL TO authenticated USING (true);
 CREATE POLICY "All authenticated users can manage khata transactions" ON public.khata_transactions FOR ALL TO authenticated USING (true);
 
+-- Customers (CRM)
+CREATE TABLE IF NOT EXISTS public.customers (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    name TEXT NOT NULL,
+    phone TEXT UNIQUE NOT NULL,
+    total_visits INTEGER DEFAULT 1,
+    last_visit TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
+ALTER TABLE public.customers ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "All authenticated users can manage customers" ON public.customers FOR ALL TO authenticated USING (true);

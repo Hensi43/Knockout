@@ -13,7 +13,7 @@ import { Product, OrderItem } from "@/types/database";
 interface BillingModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onConfirm: (total: number, discount: number) => void;
+    onConfirm: (total: number, discount: number, customer?: { name: string, phone: string, sendReceipt: boolean }) => void;
     sessionData: {
         id: string;
         startTime: string;
@@ -30,6 +30,11 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: Billin
     const [products, setProducts] = useState<Product[]>([]);
     const [orders, setOrders] = useState<OrderItem[]>([]);
     const [showSnackSelector, setShowSnackSelector] = useState(false);
+
+    // WhatsApp CRM fields
+    const [customerName, setCustomerName] = useState("");
+    const [customerPhone, setCustomerPhone] = useState("");
+    const [sendReceipt, setSendReceipt] = useState(false);
 
     useEffect(() => {
         if (isOpen) {
@@ -174,6 +179,39 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: Billin
                                     />
                                 </div>
 
+                                <div className="space-y-3 pt-2">
+                                    <div className="flex items-center justify-between px-1">
+                                        <label className="text-xs font-medium tracking-wider flex items-center gap-2 cursor-pointer" onClick={() => setSendReceipt(!sendReceipt)}>
+                                            <span className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${sendReceipt ? 'bg-primary border-primary text-black' : 'border-white/20 bg-transparent'}`}>
+                                                {sendReceipt && (
+                                                    <svg width="10" height="8" viewBox="0 0 10 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <path d="M1 4L3.5 6.5L9 1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                                    </svg>
+                                                )}
+                                            </span>
+                                            Send WhatsApp Receipt & Save to CRM
+                                        </label>
+                                    </div>
+                                    <AnimatePresence>
+                                        {sendReceipt && (
+                                            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="space-y-3 p-3 bg-white/5 rounded-xl border border-white/5 overflow-hidden">
+                                                <Input
+                                                    placeholder="Player Name"
+                                                    value={customerName}
+                                                    onChange={e => setCustomerName(e.target.value)}
+                                                    className="h-10 bg-black/20 focus:border-primary/50 border-white/10 text-sm"
+                                                />
+                                                <Input
+                                                    placeholder="Phone Number (e.g. 9876543210)"
+                                                    value={customerPhone}
+                                                    onChange={e => setCustomerPhone(e.target.value)}
+                                                    className="h-10 bg-black/20 focus:border-primary/50 border-white/10 text-sm"
+                                                />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
                                 <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                                     <span className="text-lg font-bold">Total Amount</span>
                                     <span className="text-2xl font-black text-primary">₹{finalAmount.toFixed(2)}</span>
@@ -185,7 +223,7 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: Billin
                                 <Button
                                     variant="primary"
                                     className="flex-1"
-                                    onClick={() => onConfirm(finalAmount, discount)}
+                                    onClick={() => onConfirm(finalAmount, discount, { name: customerName, phone: customerPhone, sendReceipt })}
                                 >
                                     Process Payment
                                 </Button>

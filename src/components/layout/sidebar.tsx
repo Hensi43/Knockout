@@ -13,7 +13,8 @@ import {
     LogOut,
     ChevronRight,
     Package,
-    BookText
+    BookText,
+    Users
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 import { EndShiftModal } from "@/components/features/shifts/end-shift-modal";
@@ -22,6 +23,7 @@ const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Tables", href: "/dashboard/tables", icon: TableIcon },
     { name: "Active Sessions", href: "/dashboard/sessions", icon: Clock },
+    { name: "Customers", href: "/dashboard/customers", icon: Users },
     { name: "Inventory", href: "/dashboard/inventory", icon: Package },
     { name: "Khata (Ledger)", href: "/dashboard/khata", icon: BookText },
     { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
