@@ -36,5 +36,23 @@ export const inventoryService = {
             const data = await res.json();
             throw new Error(data.error || 'Failed to delete product');
         }
+    },
+
+    async getSessionOrders(sessionId: string): Promise<any[]> {
+        const res = await fetch(`/api/sessions/${sessionId}/orders`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to fetch session orders');
+        return data;
+    },
+
+    async addOrderItem(sessionId: string, productId: string, quantity: number, priceAtTime: number): Promise<any> {
+        const res = await fetch('/api/sessions/add-item', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId, productId, quantity, priceAtTime }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to add order item');
+        return data;
     }
 };

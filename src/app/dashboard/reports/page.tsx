@@ -15,6 +15,7 @@ export default function ReportsPage() {
         monthly: 0,
         mostUsed: { name: 'N/A', count: 0 },
         revenueStats: [],
+        dashboardStats: { activeTables: 0, totalTables: 0, ongoingSessions: 0, averageSessionDuration: 0 },
         loading: true
     });
 
@@ -24,15 +25,35 @@ export default function ReportsPage() {
 
     const fetchStats = async () => {
         try {
-            const daily = await reportService.getDailyRevenue();
-            const monthly = await reportService.getMonthlyRevenue();
-            const mostUsed = await reportService.getMostUsedTable();
-            const revenueStats = await reportService.getRevenueStats();
-            setStats({ daily, monthly, mostUsed, revenueStats, loading: false });
+            const [daily, monthly, mostUsed, revenueStats, dashboardStats] = await Promise.all([
+                reportService.getDailyRevenue(),
+                reportService.getMonthlyRevenue(),
+                reportService.getMostUsedTable(),
+                reportService.getRevenueStats(),
+                reportService.getDashboardStats()
+            ]);
+            setStats({ daily, monthly, mostUsed, revenueStats, dashboardStats, loading: false });
         } catch (error) {
             console.error("Error fetching stats:", error);
             setStats(prev => ({ ...prev, loading: false }));
         }
+    };
+
+    const handleExportCSV = () => {
+        if (!stats.revenueStats || stats.revenueStats.length === 0) return;
+        
+        const headers = ["Date,Revenue (INR)"];
+        const rows = stats.revenueStats.map((r: any) => `${r.date},${r.revenue}`);
+        const csvContent = headers.concat(rows).join("\n");
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.setAttribute("href", url);
+        link.setAttribute("download", `revenue_report_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
     return (
@@ -42,7 +63,7 @@ export default function ReportsPage() {
                     <h1 className="text-3xl font-bold gold-text-gradient font-serif">Financial Reports</h1>
                     <p className="text-muted-foreground mt-1">Detailed insights into your club's performance.</p>
                 </div>
-                <Button variant="outline" className="flex items-center gap-2">
+                <Button variant="outline" className="flex items-center gap-2" onClick={handleExportCSV}>
                     <Download size={18} /> Export CSV
                 </Button>
             </div>
@@ -145,9 +166,24 @@ export default function ReportsPage() {
                     <h3 className="text-lg font-bold mb-6">Recent Performance Details</h3>
                     <div className="space-y-4">
                         {[
-                            { label: "Total Online Payments", value: "65%", color: "bg-blue-500" },
-                            { label: "Morning vs Night Usage", value: "45/55", color: "bg-purple-500" },
-                            { label: "Customer Return Rate", value: "78%", color: "bg-green-500" },
+                            { 
+                                label: "Active vs Total Tables", 
+                                value: `${stats.dashboardStats.activeTables} / ${stats.dashboardStats.totalTables}`, 
+                                percentage: stats.dashboardStats.totalTables ? (stats.dashboardStats.activeTables / stats.dashboardStats.totalTables) * 100 : 0,
+                                color: "bg-blue-500" 
+                            },
+                            { 
+                                label: "Ongoing Sessions", 
+                                value: stats.dashboardStats.ongoingSessions.toString(), 
+                                percentage: stats.dashboardStats.activeTables ? (stats.dashboardStats.ongoingSessions / stats.dashboardStats.activeTables) * 100 : 0,
+                                color: "bg-purple-500" 
+                            },
+                            { 
+                                label: "Avg Session Duration", 
+                                value: `${stats.dashboardStats.averageSessionDuration} mins`, 
+                                percentage: Math.min((stats.dashboardStats.averageSessionDuration / 120) * 100, 100), // Assuming 2 hours is 100% for the bar
+                                color: "bg-green-500" 
+                            },
                         ].map((item, i) => (
                             <div key={i} className="space-y-2">
                                 <div className="flex justify-between text-sm">
@@ -155,7 +191,7 @@ export default function ReportsPage() {
                                     <span className="font-bold text-white">{item.value}</span>
                                 </div>
                                 <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
-                                    <div className={`h-full ${item.color} opacity-60 w-3/4`} />
+                                    <div className={`h-full ${item.color} opacity-60`} style={{ width: `${item.percentage}%` }} />
                                 </div>
                             </div>
                         ))}
