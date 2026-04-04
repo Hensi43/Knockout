@@ -21,7 +21,7 @@ export async function POST(request: Request) {
         const supabase = getSupabaseAdmin();
         const { name, hourlyRate } = await request.json();
 
-        if (!name || !hourlyRate) {
+        if (!name || hourlyRate === undefined || hourlyRate === null) {
             return NextResponse.json({ error: 'Name and hourly rate are required' }, { status: 400 });
         }
 

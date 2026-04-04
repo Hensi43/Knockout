@@ -27,6 +27,25 @@ export const sessionService = {
         const res = await fetch('/api/sessions/active');
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Failed to fetch active sessions');
-        return data; // contains joined snooker_tables
+        return data; 
+    },
+
+    async cancelSession(sessionId: string) {
+        const res = await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' });
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || 'Failed to cancel session');
+        }
+    },
+
+    async transferSession(sessionId: string, newTableId: string) {
+        const res = await fetch(`/api/sessions/${sessionId}/transfer`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ newTableId })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to transfer session');
+        return data;
     }
 };

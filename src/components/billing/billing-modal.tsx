@@ -20,9 +20,11 @@ interface BillingModalProps {
         hourlyRate: number;
         tableName: string;
     };
+    error?: string;
+    isSubmitting?: boolean;
 }
 
-export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: BillingModalProps) {
+export function BillingModal({ isOpen, onClose, onConfirm, sessionData, error, isSubmitting }: BillingModalProps) {
     const [duration, setDuration] = useState("");
     const [billingAmount, setBillingAmount] = useState(0);
     const [discount, setDiscount] = useState(0);
@@ -40,10 +42,10 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: Billin
         if (isOpen) {
             const now = new Date();
             const start = new Date(sessionData.startTime);
-            const diffInMinutes = Math.max(1, Math.floor((now.getTime() - start.getTime()) / (1000 * 60)));
+            const diffInMinutes = Math.max(0, (now.getTime() - start.getTime()) / (1000 * 60));
 
-            const ratePerMin = 3.5;
-            const amount = Math.round(diffInMinutes * ratePerMin * 100) / 100;
+            const ratePerMin = sessionData.hourlyRate;
+            const amount = Math.round(diffInMinutes * ratePerMin); // Round figures only
 
             setDuration(formatDistanceStrict(start, now));
             setBillingAmount(amount);
@@ -93,6 +95,12 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: Billin
                             <p className="text-sm text-muted-foreground mt-1">Session summary for {sessionData.tableName}</p>
                         </div>
 
+                        {error && (
+                            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm text-center">
+                                {error}
+                            </div>
+                        )}
+
                         <div className="space-y-6">
                             <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
                                 <div className="flex items-center gap-3">
@@ -106,14 +114,14 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: Billin
                                 </div>
                                 <div className="text-right">
                                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Rate</p>
-                                    <p className="font-semibold">₹3.5/min</p>
+                                    <p className="font-semibold">₹{sessionData.hourlyRate}/min</p>
                                 </div>
                             </div>
 
                             <div className="space-y-4">
                                 <div className="flex items-center justify-between text-sm">
                                     <span className="text-muted-foreground">Table Charges</span>
-                                    <span className="font-medium">₹{billingAmount.toFixed(2)}</span>
+                                    <span className="font-medium">₹{billingAmount}</span>
                                 </div>
 
                                 {orders.length > 0 && (
@@ -214,7 +222,7 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: Billin
 
                                 <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                                     <span className="text-lg font-bold">Total Amount</span>
-                                    <span className="text-2xl font-black text-primary">₹{finalAmount.toFixed(2)}</span>
+                                    <span className="text-2xl font-black text-primary">₹{finalAmount}</span>
                                 </div>
                             </div>
 
@@ -224,8 +232,9 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData }: Billin
                                     variant="primary"
                                     className="flex-1"
                                     onClick={() => onConfirm(finalAmount, discount, { name: customerName, phone: customerPhone, sendReceipt })}
+                                    disabled={isSubmitting}
                                 >
-                                    Process Payment
+                                    {isSubmitting ? "Processing..." : "Process Payment"}
                                 </Button>
                             </div>
                         </div>

@@ -19,13 +19,18 @@ export const tableService = {
     },
 
     async updateTableStatus(id: string, status: 'available' | 'occupied') {
+        return this.updateTableDetails(id, { status });
+    },
+
+    async updateTableDetails(id: string, updates: Partial<SnookerTable>) {
         const res = await fetch(`/api/tables/${id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status })
+            body: JSON.stringify(updates)
         });
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to update table status');
+        if (!res.ok) throw new Error(data.error || 'Failed to update table details');
+        return data as SnookerTable;
     },
 
     async deleteTable(id: string) {

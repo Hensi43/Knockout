@@ -3,7 +3,8 @@ import { getSupabaseAdmin } from '@/lib/supabase-server';
 
 export async function GET(request: Request, context: any) {
     try {
-        const { id } = context.params;
+        const params = await context.params;
+        const { id } = params;
         if (!id) return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
 
         const supabase = getSupabaseAdmin();

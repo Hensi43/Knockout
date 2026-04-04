@@ -11,9 +11,11 @@ interface StartSessionModalProps {
     onClose: () => void;
     onConfirm: (playerCount: number) => void;
     tableName: string;
+    error?: string;
+    isSubmitting?: boolean;
 }
 
-export function StartSessionModal({ isOpen, onClose, onConfirm, tableName }: StartSessionModalProps) {
+export function StartSessionModal({ isOpen, onClose, onConfirm, tableName, error, isSubmitting }: StartSessionModalProps) {
     const [playerCount, setPlayerCount] = useState(2);
 
     if (!isOpen) return null;
@@ -39,6 +41,12 @@ export function StartSessionModal({ isOpen, onClose, onConfirm, tableName }: Sta
                             <h2 className="text-2xl font-bold gold-text-gradient">Start Session</h2>
                             <p className="text-sm text-muted-foreground mt-1">{tableName}</p>
                         </div>
+
+                        {error && (
+                            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-500 text-sm text-center">
+                                {error}
+                            </div>
+                        )}
 
                         <div className="space-y-6">
                             <div className="space-y-4">
@@ -67,8 +75,9 @@ export function StartSessionModal({ isOpen, onClose, onConfirm, tableName }: Sta
                                     variant="primary"
                                     className="flex-1"
                                     onClick={() => onConfirm(playerCount)}
+                                    disabled={isSubmitting}
                                 >
-                                    Start Playing
+                                    {isSubmitting ? "Starting..." : "Start Playing"}
                                 </Button>
                             </div>
                         </div>

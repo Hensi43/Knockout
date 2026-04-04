@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { GlassCard } from "@/components/ui/glass-card";
 import { SnookerTable, Session } from "@/types/database";
-import { Circle, Play, StopCircle, MoreVertical, Clock, Plus } from "lucide-react";
+import { Circle, Play, StopCircle, MoreVertical, Clock, Plus, ArrowRightLeft, Trash2, Edit2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AddSnackModal } from "./add-snack-modal";
@@ -13,9 +13,14 @@ interface TableCardProps {
     activeSession?: Session;
     onStartSession: (tableId: string) => void;
     onStopSession: (tableId: string) => void;
+    onTransferSession?: (sessionId: string) => void;
+    onCancelSession?: (sessionId: string) => void;
+    onEditTable?: (tableId: string) => void;
+    onDeleteTable?: (tableId: string) => void;
 }
 
 function LiveSessionTimer({ activeSession, hourlyRate }: { activeSession: Session; hourlyRate: number }) {
+// ... existing LiveSessionTimer code ...
     const [elapsedMs, setElapsedMs] = useState<number>(0);
 
     useEffect(() => {
@@ -36,7 +41,7 @@ function LiveSessionTimer({ activeSession, hourlyRate }: { activeSession: Sessio
     const seconds = Math.floor((elapsedMs % (1000 * 60)) / 1000);
 
     // Calculate cost based on exact milliseconds elapsed
-    const cost = (elapsedMs / (1000 * 60 * 60)) * hourlyRate;
+    const cost = (elapsedMs / (1000 * 60)) * hourlyRate;
 
     return (
         <div className="flex flex-col gap-1 mt-2">
@@ -53,9 +58,10 @@ function LiveSessionTimer({ activeSession, hourlyRate }: { activeSession: Sessio
     );
 }
 
-export function TableCard({ table, activeSession, onStartSession, onStopSession }: TableCardProps) {
+export function TableCard({ table, activeSession, onStartSession, onStopSession, onTransferSession, onCancelSession, onEditTable, onDeleteTable }: TableCardProps) {
     const isOccupied = table.status === 'occupied';
     const [showSnackModal, setShowSnackModal] = useState(false);
+    const [showDropdown, setShowDropdown] = useState(false);
 
     return (
         <GlassCard className="group relative">
@@ -63,7 +69,7 @@ export function TableCard({ table, activeSession, onStartSession, onStopSession 
                 <div className="flex justify-between items-start mb-6">
                     <div>
                         <h3 className="text-xl font-bold text-white group-hover:gold-text-gradient transition-all">{table.name}</h3>
-                        {!isOccupied && <p className="text-sm text-muted-foreground mt-1">₹{table.hourly_rate}/hr</p>}
+                        {!isOccupied && <p className="text-sm text-muted-foreground mt-1">₹{table.hourly_rate}/min</p>}
                         {isOccupied && activeSession && (
                             <LiveSessionTimer activeSession={activeSession} hourlyRate={table.hourly_rate} />
                         )}
@@ -115,14 +121,44 @@ export function TableCard({ table, activeSession, onStartSession, onStopSession 
                             <Play size={16} className="mr-2" /> Start Session
                         </Button>
                     )}
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        className="px-2"
-                        onClick={() => alert("More options coming soon!")}
-                    >
-                        <MoreVertical size={16} />
-                    </Button>
+                    
+                    <div className="relative">
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="px-2 h-full"
+                            onClick={() => setShowDropdown(!showDropdown)}
+                        >
+                            <MoreVertical size={16} />
+                        </Button>
+                        
+                        {showDropdown && (
+                            <>
+                                <div className="fixed inset-0 z-40" onClick={() => setShowDropdown(false)} />
+                                <div className="absolute bottom-full right-0 mb-2 w-48 bg-black/95 border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden backdrop-blur-xl">
+                                    {isOccupied ? (
+                                        <>
+                                            <button className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/10 transition-colors flex items-center gap-2" onClick={() => { setShowDropdown(false); onTransferSession?.(activeSession!.id); }}>
+                                                <ArrowRightLeft size={14} /> Transfer Session
+                                            </button>
+                                            <button className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2 border-t border-white/5" onClick={() => { setShowDropdown(false); onCancelSession?.(activeSession!.id); }}>
+                                                <Trash2 size={14} /> Cancel Session
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <button className="w-full text-left px-4 py-3 text-sm text-white hover:bg-white/10 transition-colors flex items-center gap-2" onClick={() => { setShowDropdown(false); onEditTable?.(table.id); }}>
+                                                <Edit2 size={14} /> Edit Details
+                                            </button>
+                                            <button className="w-full text-left px-4 py-3 text-sm text-red-500 hover:bg-red-500/10 transition-colors flex items-center gap-2 border-t border-white/5" onClick={() => { setShowDropdown(false); onDeleteTable?.(table.id); }}>
+                                                <Trash2 size={14} /> Delete Table
+                                            </button>
+                                        </>
+                                    )}
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 

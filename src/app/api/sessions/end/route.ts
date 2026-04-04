@@ -34,9 +34,9 @@ export async function POST(request: Request) {
         const start = new Date(sessionData.start_time).getTime();
         const now = Date.now();
         const elapsedMs = Math.max(0, now - start);
-        const hours = elapsedMs / (1000 * 60 * 60);
+        const minutes = elapsedMs / (1000 * 60);
 
-        const totalCost = hours * tableData.hourly_rate;
+        const totalCost = minutes * tableData.hourly_rate;
 
         const { data: orderItems, error: ordersError } = await supabase
             .from('order_items')
@@ -81,8 +81,8 @@ export async function POST(request: Request) {
         const receipt = {
             session: updatedSession[0],
             breakdown: {
-                hours: hours,
-                hourlyRate: tableData.hourly_rate,
+                minutes: minutes,
+                ratePerMinute: tableData.hourly_rate,
                 timeCost: timeCost,
                 snacks: orderItems.map(item => ({
                     name: (item.products as any)?.name || 'Unknown Item',
