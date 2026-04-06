@@ -50,7 +50,11 @@ export function TransferSessionModal({ isOpen, onClose, onConfirm, availableTabl
                                 </div>
                             )}
 
-                            <div className="space-y-6">
+                            <div className="space-y-6" onKeyDown={(e) => {
+                                if (e.key === 'Enter' && selectedTableId && !isSubmitting) {
+                                    onConfirm(selectedTableId);
+                                }
+                            }}>
                                 <div className="space-y-2">
                                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Select New Table</label>
                                     <div className="grid grid-cols-2 gap-2 mt-2">

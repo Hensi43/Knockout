@@ -48,7 +48,11 @@ export function AddTableModal({ isOpen, onClose, onConfirm, error, isSubmitting 
                                 </div>
                             )}
 
-                            <div className="space-y-6">
+                            <div className="space-y-6" onKeyDown={(e) => {
+                                if (e.key === 'Enter' && name && !isSubmitting) {
+                                    onConfirm(name, rate);
+                                }
+                            }}>
                                 <div className="space-y-2">
                                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Table Name / ID</label>
                                     <Input

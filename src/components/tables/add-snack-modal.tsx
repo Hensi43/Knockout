@@ -82,6 +82,11 @@ export function AddSnackModal({ sessionId, onClose, onAdded }: AddSnackModalProp
                         className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white focus:outline-none focus:border-primary/50"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && filtered.length > 0 && !addingId && filtered[0].stock > 0) {
+                                handleAdd(filtered[0]);
+                            }
+                        }}
                     />
                 </div>
 

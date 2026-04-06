@@ -25,7 +25,6 @@ const navItems = [
     { name: "Active Sessions", href: "/dashboard/sessions", icon: Clock },
     { name: "Customers", href: "/dashboard/customers", icon: Users },
     { name: "Inventory", href: "/dashboard/inventory", icon: Package },
-    { name: "Khata (Ledger)", href: "/dashboard/khata", icon: BookText },
     { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
     { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];

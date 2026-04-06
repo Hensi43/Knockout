@@ -48,7 +48,11 @@ export function StartSessionModal({ isOpen, onClose, onConfirm, tableName, error
                             </div>
                         )}
 
-                        <div className="space-y-6">
+                        <div className="space-y-6" onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !isSubmitting) {
+                                onConfirm(playerCount);
+                            }
+                        }}>
                             <div className="space-y-4">
                                 <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block text-center">
                                     Number of Players

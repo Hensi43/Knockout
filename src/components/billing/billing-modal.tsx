@@ -101,7 +101,11 @@ export function BillingModal({ isOpen, onClose, onConfirm, sessionData, error, i
                             </div>
                         )}
 
-                        <div className="space-y-6">
+                        <div className="space-y-6" onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !isSubmitting) {
+                                onConfirm(finalAmount, discount, { name: customerName, phone: customerPhone, sendReceipt });
+                            }
+                        }}>
                             <div className="flex items-center justify-between p-4 rounded-xl bg-white/5 border border-white/5">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
