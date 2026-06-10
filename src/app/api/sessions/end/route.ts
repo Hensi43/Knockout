@@ -50,7 +50,7 @@ export async function POST(request: Request) {
         if (ordersError) throw ordersError;
 
         const timeCost = totalCost;
-        const snacksTotal = orderItems.reduce((acc, item) => acc + (item.quantity * item.price_at_time), 0);
+        const snacksTotal = orderItems.reduce((acc: number, item: any) => acc + (item.quantity * item.price_at_time), 0);
         const subtotal = timeCost + snacksTotal;
 
         const finalAmount = Math.max(0, subtotal - (discount || 0));
@@ -84,7 +84,7 @@ export async function POST(request: Request) {
                 minutes: minutes,
                 ratePerMinute: tableData.hourly_rate,
                 timeCost: timeCost,
-                snacks: orderItems.map(item => ({
+                snacks: orderItems.map((item: any) => ({
                     name: (item.products as any)?.name || 'Unknown Item',
                     quantity: item.quantity,
                     price: item.price_at_time,

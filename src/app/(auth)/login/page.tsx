@@ -9,8 +9,8 @@ import { GlassCard } from "@/components/ui/glass-card";
 import { motion } from "framer-motion";
 
 export default function LoginPage() {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
+    const [email, setEmail] = useState("hensibaghel43@gmail.com");
+    const [password, setPassword] = useState("ownerpassword");
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const router = useRouter();
@@ -32,10 +32,6 @@ export default function LoginPage() {
         } else {
             router.push("/dashboard");
         }
-    };
-
-    const handleMockLogin = () => {
-        router.push("/dashboard");
     };
 
     return (
@@ -85,22 +81,6 @@ export default function LoginPage() {
                         <Button type="submit" className="w-full h-11 mt-4" disabled={loading}>
                             {loading ? "Authenticating..." : "Sign In"}
                         </Button>
-
-                        {process.env.NEXT_PUBLIC_MOCK_MODE === 'true' && (
-                            <div className="pt-4 border-t border-white/5 mt-4">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="w-full h-11 bg-white/5 hover:bg-white/10"
-                                    onClick={handleMockLogin}
-                                >
-                                    Login with Mock Mode
-                                </Button>
-                                <p className="text-[10px] text-center text-muted-foreground mt-2">
-                                    Developer Bypass Active
-                                </p>
-                            </div>
-                        )}
                     </form>
 
                     <p className="mt-8 text-center text-xs text-muted-foreground">

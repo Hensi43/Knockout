@@ -127,10 +127,27 @@ class MockQueryBuilder {
             saveDb(db);
             list = db[this.table].filter(item => this.filters.every(filter => filter(item)));
         } else if (this.isDelete) {
+            const itemsToDelete = db[this.table].filter(item => this.filters.every(filter => filter(item)));
+            const idsToDelete = itemsToDelete.map(item => item.id);
+
             db[this.table] = db[this.table].filter(item => {
                 const matches = this.filters.every(filter => filter(item));
                 return !matches;
             });
+
+            // Cascade delete child rows in Mock DB
+            if (this.table === 'snooker_tables') {
+                const sessionsToDelete = db.sessions.filter(s => idsToDelete.includes(s.table_id));
+                const sessionIdsToDelete = sessionsToDelete.map(s => s.id);
+
+                db.sessions = db.sessions.filter(s => !idsToDelete.includes(s.table_id));
+                db.order_items = db.order_items.filter(oi => !sessionIdsToDelete.includes(oi.session_id));
+                db.payments = db.payments.filter(p => !sessionIdsToDelete.includes(p.session_id));
+            } else if (this.table === 'sessions') {
+                db.order_items = db.order_items.filter(oi => !idsToDelete.includes(oi.session_id));
+                db.payments = db.payments.filter(p => !idsToDelete.includes(p.session_id));
+            }
+
             saveDb(db);
             list = [];
         }

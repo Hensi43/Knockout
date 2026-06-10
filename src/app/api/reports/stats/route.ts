@@ -16,7 +16,7 @@ export async function GET() {
             .eq('status', 'completed')
             .gte('created_at', startOfMonth.toISOString());
         if (monthErr) throw monthErr;
-        const monthlyRevenue = monthData.reduce((acc, curr) => acc + (Number(curr.total_amount) || 0), 0);
+        const monthlyRevenue = monthData.reduce((acc: number, curr: any) => acc + (Number(curr.total_amount) || 0), 0);
 
         // Get Most Used Table
         const { data: sessions, error: sessErr } = await supabase

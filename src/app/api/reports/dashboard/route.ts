@@ -35,13 +35,13 @@ export async function GET() {
             .gte('created_at', today.toISOString());
         if (revErr) throw revErr;
 
-        const revenueToday = todaySessions.reduce((acc, curr) => acc + (Number(curr.total_amount) || 0), 0);
+        const revenueToday = todaySessions.reduce((acc: number, curr: any) => acc + (Number(curr.total_amount) || 0), 0);
 
         // Average Session Duration
         let totalDurationMs = 0;
         let validSessionsCount = 0;
 
-        todaySessions.forEach(session => {
+        todaySessions.forEach((session: any) => {
             if (session.end_time && session.start_time) {
                 const start = new Date(session.start_time).getTime();
                 const end = new Date(session.end_time).getTime();

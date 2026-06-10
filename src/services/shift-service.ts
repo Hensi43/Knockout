@@ -39,7 +39,7 @@ export const ShiftService = {
             .eq('payment_mode', 'cash')
             .gte('created_at', shift.start_time);
 
-        const totalCashSales = cashSales?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+        const totalCashSales = cashSales?.reduce((sum: number, p: any) => sum + Number(p.amount), 0) || 0;
         const expectedSystemCash = Number(shift.starting_cash) + totalCashSales;
 
         // 3. Close shift

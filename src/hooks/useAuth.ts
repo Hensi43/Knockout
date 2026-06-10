@@ -30,7 +30,7 @@ export function useAuth() {
         getInitialSession();
 
         // Listen for auth state changes (sign-in, sign-out, etc.)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
             setUser((session?.user as AuthUser) ?? null);
             setLoading(false);
         });

@@ -14,7 +14,8 @@
       "name": "Table 1 (Standard)",
       "hourly_rate": 150,
       "status": "available",
-      "created_at": "2026-06-10T06:15:52.215Z"
+      "created_at": "2026-06-10T06:15:52.215Z",
+      "updated_at": "2026-06-10T07:36:49.740Z"
     },
     {
       "id": "t2",
@@ -36,18 +37,24 @@
       "hourly_rate": 250,
       "status": "available",
       "created_at": "2026-06-10T06:15:52.215Z"
-    },
-    {
-      "id": "t5",
-      "name": "Table 5 (Russian Pyramid)",
-      "hourly_rate": 300,
-      "status": "available",
-      "created_at": "2026-06-10T06:15:52.215Z"
     }
   ],
-  "sessions": [],
+  "sessions": [
+    {
+      "id": "92856928-8469-4370-bb73-3782dc007037",
+      "created_at": "2026-06-10T07:24:06.677Z",
+      "table_id": "t1",
+      "user_id": null,
+      "start_time": "2026-06-10T07:24:06.673Z",
+      "player_count": 2,
+      "status": "completed",
+      "end_time": "2026-06-10T07:36:49.740Z",
+      "total_amount": 1907.665,
+      "discount_amount": 0,
+      "updated_at": "2026-06-10T07:36:49.740Z"
+    }
+  ],
   "products": [],
-
   "order_items": [],
   "staff_shifts": [
     {
