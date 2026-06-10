@@ -64,10 +64,6 @@ export default function TablesPage() {
     const [isCancellingSession, setIsCancellingSession] = useState(false);
     const [cancelSessionError, setCancelSessionError] = useState("");
 
-    useEffect(() => {
-        fetchTables();
-    }, []);
-
     const fetchTables = async () => {
         try {
             const [tablesData, sessionsData] = await Promise.all([

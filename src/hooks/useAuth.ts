@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
+import { AuthChangeEvent, Session } from "@supabase/supabase-js";
 
 export interface AuthUser {
     id: string;
     email?: string;
     role?: string;
     full_name?: string;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export function useAuth() {
@@ -19,7 +20,7 @@ export function useAuth() {
         const getInitialSession = async () => {
             try {
                 const { data: { user: initialUser } } = await supabase.auth.getUser();
-                setUser(initialUser as AuthUser);
+                setUser((initialUser as unknown) as AuthUser);
             } catch (error) {
                 console.error("Error fetching initial session:", error);
             } finally {
@@ -30,8 +31,8 @@ export function useAuth() {
         getInitialSession();
 
         // Listen for auth state changes (sign-in, sign-out, etc.)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
-            setUser((session?.user as AuthUser) ?? null);
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+            setUser((session?.user as unknown as AuthUser) ?? null);
             setLoading(false);
         });
 
