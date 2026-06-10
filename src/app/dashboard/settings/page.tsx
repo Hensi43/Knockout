@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/dashboard-layout";
 import { GlassCard } from "@/components/ui/glass-card";
 import { Button } from "@/components/ui/button";
@@ -22,11 +22,28 @@ export default function SettingsPage() {
     const [clubName, setClubName] = useState("Snooker Elite");
     const [contactEmail, setContactEmail] = useState("admin@snookerelite.com");
     const [currency, setCurrency] = useState("₹ (INR)");
+    const [selectedTheme, setSelectedTheme] = useState("dark");
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            const storedTheme = localStorage.getItem("theme") || "dark";
+            setSelectedTheme(storedTheme);
+        }
+    }, []);
 
     const handleSave = () => {
         setIsSaving(true);
+        if (typeof window !== "undefined") {
+            localStorage.setItem("theme", selectedTheme);
+            if (selectedTheme === "light") {
+                document.documentElement.classList.add("light");
+            } else {
+                document.documentElement.classList.remove("light");
+            }
+        }
         setTimeout(() => setIsSaving(false), 1000); // Mock save
     };
+
     
     // Quick helper hook for Enter key
     const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -197,22 +214,47 @@ export default function SettingsPage() {
 
                     {activeTab === "appearance" && (
                         <GlassCard className="p-8">
-                            <div className="mb-6 pb-6 border-b border-white/10">
+                            <div className="mb-6 pb-6 border-b border-white/10 col-span-2">
                                 <h2 className="text-xl font-bold flex items-center gap-2"><Palette className="text-primary" /> Appearance</h2>
                                 <p className="text-sm text-muted-foreground mt-1">Customize the platform theme.</p>
                             </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="border-2 border-primary bg-black rounded-xl p-4 text-center cursor-pointer">
-                                    <div className="w-16 h-16 rounded-full bg-primary/10 mx-auto mb-3 flex items-center justify-center text-primary"><Palette /></div>
-                                    <p className="font-medium">Dark Premium (Selected)</p>
+                            <div className="grid grid-cols-2 gap-4 w-full">
+                                <div 
+                                    onClick={() => setSelectedTheme("dark")}
+                                    className={`border-2 rounded-xl p-6 text-center cursor-pointer transition-all ${
+                                        selectedTheme === "dark" 
+                                            ? "border-primary bg-black/40 text-white" 
+                                            : "border-white/5 bg-white/5 hover:bg-white/10 text-muted-foreground"
+                                    }`}
+                                >
+                                    <div className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center transition-all ${
+                                        selectedTheme === "dark" ? "bg-primary/20 text-primary" : "bg-white/10 text-muted-foreground"
+                                    }`}>
+                                        <Palette />
+                                    </div>
+                                    <p className="font-medium text-white">Dark Premium</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Luxury deep gold aesthetic</p>
                                 </div>
-                                <div className="border border-white/10 bg-white/5 rounded-xl p-4 text-center cursor-pointer opacity-50">
-                                    <div className="w-16 h-16 rounded-full bg-white/10 mx-auto mb-3 flex items-center justify-center text-white"><Store /></div>
-                                    <p className="font-medium">Light Studio</p>
+                                <div 
+                                    onClick={() => setSelectedTheme("light")}
+                                    className={`border-2 rounded-xl p-6 text-center cursor-pointer transition-all ${
+                                        selectedTheme === "light" 
+                                            ? "border-primary bg-white/20 text-white" 
+                                            : "border-white/5 bg-white/5 hover:bg-white/10 text-muted-foreground"
+                                    }`}
+                                >
+                                    <div className={`w-16 h-16 rounded-full mx-auto mb-3 flex items-center justify-center transition-all ${
+                                        selectedTheme === "light" ? "bg-primary/20 text-primary" : "bg-white/10 text-muted-foreground"
+                                    }`}>
+                                        <Store />
+                                    </div>
+                                    <p className="font-medium text-white">Light Studio</p>
+                                    <p className="text-xs text-muted-foreground mt-1">Sapphire & Silver layout</p>
                                 </div>
                             </div>
                         </GlassCard>
                     )}
+
 
                     {activeTab === "security" && (
                         <GlassCard className="p-8">
