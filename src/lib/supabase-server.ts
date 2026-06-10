@@ -32,6 +32,13 @@ class MockQueryBuilder {
         return this;
     }
 
+    in(column: string, values: any[]) {
+        this.filters.push(item => {
+            return values.includes(item[column]);
+        });
+        return this;
+    }
+
     gte(column: string, value: any) {
         this.filters.push(item => {
             if (!item[column]) return false;
@@ -156,17 +163,26 @@ class MockQueryBuilder {
         if (this.table === 'sessions') {
             list = list.map(session => {
                 const table = db.snooker_tables.find(t => t.id === session.table_id);
+                const items = db.order_items.filter(oi => oi.session_id === session.id);
                 return {
                     ...session,
-                    snooker_tables: table ? { name: table.name } : null
+                    snooker_tables: table ? { name: table.name } : null,
+                    order_items: items.map(oi => ({ status: oi.status }))
                 };
             });
         } else if (this.table === 'order_items') {
             list = list.map(item => {
                 const product = db.products.find(p => p.id === item.product_id);
+                const session = db.sessions.find(s => s.id === item.session_id);
+                const table = session ? db.snooker_tables.find(t => t.id === session.table_id) : null;
                 return {
                     ...item,
-                    products: product ? { name: product.name, price: product.price } : null
+                    products: product ? { name: product.name, price: product.price } : null,
+                    sessions: session ? {
+                        id: session.id,
+                        table_id: session.table_id,
+                        snooker_tables: table ? { name: table.name } : null
+                    } : null
                 };
             });
         }

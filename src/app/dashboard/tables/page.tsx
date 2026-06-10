@@ -15,6 +15,7 @@ import { TransferSessionModal } from "@/components/tables/transfer-session-modal
 import { BillingModal } from "@/components/billing/billing-modal";
 import { StartSessionModal } from "@/components/tables/start-session-modal";
 import { ReceiptModal, ReceiptData } from "@/components/tables/receipt-modal";
+import { ConfirmationModal } from "@/components/ui/confirmation-modal";
 
 export default function TablesPage() {
     const [tables, setTables] = useState<SnookerTable[]>([]);
@@ -53,6 +54,15 @@ export default function TablesPage() {
     const [transferModalData, setTransferModalData] = useState<{ isOpen: boolean; sessionId: string } | null>(null);
     const [isTransferring, setIsTransferring] = useState(false);
     const [transferError, setTransferError] = useState("");
+
+    // Custom confirmation modal states
+    const [deleteModalData, setDeleteModalData] = useState<{ isOpen: boolean; tableId: string } | null>(null);
+    const [isDeletingTable, setIsDeletingTable] = useState(false);
+    const [deleteError, setDeleteError] = useState("");
+
+    const [cancelSessionModalData, setCancelSessionModalData] = useState<{ isOpen: boolean; sessionId: string } | null>(null);
+    const [isCancellingSession, setIsCancellingSession] = useState(false);
+    const [cancelSessionError, setCancelSessionError] = useState("");
 
     useEffect(() => {
         fetchTables();
@@ -212,25 +222,45 @@ export default function TablesPage() {
         }
     };
 
-    const handleDeleteTable = async (tableId: string) => {
-        if (!confirm("Are you sure you want to permanently delete this table?")) return;
+    const handleDeleteTable = (tableId: string) => {
+        setDeleteError("");
+        setDeleteModalData({ isOpen: true, tableId });
+    };
+
+    const handleConfirmDeleteTable = async () => {
+        if (!deleteModalData) return;
         try {
-            await tableService.deleteTable(tableId);
+            setIsDeletingTable(true);
+            setDeleteError("");
+            await tableService.deleteTable(deleteModalData.tableId);
+            setDeleteModalData(null);
             fetchTables();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Delete table failed:", error);
-            alert("Failed to delete table. Check if active sessions depend on it.");
+            setDeleteError(error.message || "Failed to delete table. Check if active sessions depend on it.");
+        } finally {
+            setIsDeletingTable(false);
         }
     };
 
-    const handleCancelSession = async (sessionId: string) => {
-        if (!confirm("Are you sure you want to VOID this session? This action deletes the session entirely and cannot be undone.")) return;
+    const handleCancelSession = (sessionId: string) => {
+        setCancelSessionError("");
+        setCancelSessionModalData({ isOpen: true, sessionId });
+    };
+
+    const handleConfirmCancelSession = async () => {
+        if (!cancelSessionModalData) return;
         try {
-            await sessionService.cancelSession(sessionId);
+            setIsCancellingSession(true);
+            setCancelSessionError("");
+            await sessionService.cancelSession(cancelSessionModalData.sessionId);
+            setCancelSessionModalData(null);
             fetchTables();
-        } catch (error) {
+        } catch (error: any) {
             console.error("Cancel session failed:", error);
-            alert("Failed to void session.");
+            setCancelSessionError(error.message || "Failed to void session.");
+        } finally {
+            setIsCancellingSession(false);
         }
     };
 
@@ -346,6 +376,34 @@ export default function TablesPage() {
                     availableTables={tables.filter(t => t.status === 'available')}
                     error={transferError}
                     isSubmitting={isTransferring}
+                />
+            )}
+
+            {deleteModalData && (
+                <ConfirmationModal
+                    isOpen={deleteModalData.isOpen}
+                    onClose={() => setDeleteModalData(null)}
+                    onConfirm={handleConfirmDeleteTable}
+                    title="Delete Table"
+                    description={deleteError || "Are you sure you want to permanently delete this table? This will cascade and delete all associated play sessions and payment records."}
+                    confirmText="Delete"
+                    cancelText="Cancel"
+                    isDanger={true}
+                    isSubmitting={isDeletingTable}
+                />
+            )}
+
+            {cancelSessionModalData && (
+                <ConfirmationModal
+                    isOpen={cancelSessionModalData.isOpen}
+                    onClose={() => setCancelSessionModalData(null)}
+                    onConfirm={handleConfirmCancelSession}
+                    title="Void Session"
+                    description={cancelSessionError || "Are you sure you want to VOID this session? This action deletes the session entirely and cannot be undone."}
+                    confirmText="Void"
+                    cancelText="Cancel"
+                    isDanger={true}
+                    isSubmitting={isCancellingSession}
                 />
             )}
         </DashboardLayout>

@@ -84,6 +84,7 @@ CREATE TABLE IF NOT EXISTS public.order_items (
     product_id UUID REFERENCES public.products ON DELETE SET NULL,
     quantity INTEGER DEFAULT 1,
     price_at_time DECIMAL(10,2) NOT NULL,
+    status TEXT DEFAULT 'pending' CHECK (status IN ('pending', 'preparing', 'served')),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
 

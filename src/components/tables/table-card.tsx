@@ -71,7 +71,30 @@ export function TableCard({ table, activeSession, onStartSession, onStopSession,
                         <h3 className="text-xl font-bold text-white group-hover:gold-text-gradient transition-all">{table.name}</h3>
                         {!isOccupied && <p className="text-sm text-muted-foreground mt-1">₹{table.hourly_rate}/min</p>}
                         {isOccupied && activeSession && (
-                            <LiveSessionTimer activeSession={activeSession} hourlyRate={table.hourly_rate} />
+                            <>
+                                <LiveSessionTimer activeSession={activeSession} hourlyRate={table.hourly_rate} />
+                                {(() => {
+                                    const pendingCount = (activeSession as any).order_items?.filter((oi: any) => oi.status === 'pending').length || 0;
+                                    const preparingCount = (activeSession as any).order_items?.filter((oi: any) => oi.status === 'preparing').length || 0;
+                                    
+                                    if (pendingCount === 0 && preparingCount === 0) return null;
+                                    
+                                    return (
+                                        <div className="flex flex-wrap gap-1.5 mt-3">
+                                            {pendingCount > 0 && (
+                                                <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                                    ⏳ {pendingCount} Pending
+                                                </span>
+                                            )}
+                                            {preparingCount > 0 && (
+                                                <span className="flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                                                    🍳 {preparingCount} Cooking
+                                                </span>
+                                            )}
+                                        </div>
+                                    );
+                                })()}
+                            </>
                         )}
                     </div>
                     <div className={cn(

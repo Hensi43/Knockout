@@ -35,7 +35,13 @@ export function getDb(): MockDb {
                 { id: "t5", name: "Table 5 (Russian Pyramid)", hourly_rate: 300.00, status: "available", created_at: now }
             ],
             sessions: [],
-            products: [],
+            products: [
+                { id: "p1", name: "Coca-Cola", price: 40.00, category: "beverage", stock: 50, created_at: now },
+                { id: "p2", name: "Red Bull", price: 120.00, category: "beverage", stock: 24, created_at: now },
+                { id: "p3", name: "French Fries", price: 90.00, category: "snack", stock: 30, created_at: now },
+                { id: "p4", name: "Club Sandwich", price: 150.00, category: "snack", stock: 15, created_at: now },
+                { id: "p5", name: "Black Coffee", price: 60.00, category: "beverage", stock: 40, created_at: now }
+            ],
             order_items: [],
             staff_shifts: [],
             customers: [

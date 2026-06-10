@@ -6,7 +6,7 @@ export async function GET() {
         const supabase = getSupabaseAdmin();
         const { data, error } = await supabase
             .from('sessions')
-            .select('*, snooker_tables(name, hourly_rate)')
+            .select('*, snooker_tables(name, hourly_rate), order_items(status)')
             .eq('status', 'active');
 
         if (error) throw error;

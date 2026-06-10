@@ -29,7 +29,7 @@ export async function GET() {
         sessions.forEach((session: any) => {
             const id = session.table_id;
             if (!usage[id]) {
-                usage[id] = { count: 0, name: session.snooker_tables.name };
+                usage[id] = { count: 0, name: session.snooker_tables?.name || 'Deleted Table' };
             }
             usage[id].count++;
         });
