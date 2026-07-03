@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase";
-import { AuthChangeEvent, Session } from "@supabase/supabase-js";
+import { useSession, signOut as nextAuthSignOut } from "next-auth/react";
 
 export interface AuthUser {
     id: string;
@@ -11,52 +9,23 @@ export interface AuthUser {
 }
 
 export function useAuth() {
-    const [user, setUser] = useState<AuthUser | null>(null);
-    const [loading, setLoading] = useState(true);
-    const supabase = createSupabaseBrowserClient();
+    const { data: session, status } = useSession();
 
-    useEffect(() => {
-        // Get initial user session
-        const getInitialSession = async () => {
-            try {
-                const { data: { user: initialUser } } = await supabase.auth.getUser();
-                setUser((initialUser as unknown) as AuthUser);
-            } catch (error) {
-                console.error("Error fetching initial session:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        getInitialSession();
-
-        // Listen for auth state changes (sign-in, sign-out, etc.)
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
-            setUser((session?.user as unknown as AuthUser) ?? null);
-            setLoading(false);
-        });
-
-        return () => {
-            subscription.unsubscribe();
-        };
-    }, [supabase]);
+    const user: AuthUser | null = session?.user ? {
+        id: (session.user as any).id,
+        email: session.user.email || undefined,
+        role: (session.user as any).role,
+        full_name: session.user.name || undefined,
+    } : null;
 
     const signOut = async () => {
-        setLoading(true);
-        try {
-            await supabase.auth.signOut();
-            window.location.href = "/login";
-        } catch (error) {
-            console.error("Error logging out:", error);
-        } finally {
-            setLoading(false);
-        }
+        await nextAuthSignOut({ callbackUrl: "/login" });
     };
 
     return {
         user,
-        loading,
+        loading: status === "loading",
         signOut,
-        isAuthenticated: !!user,
+        isAuthenticated: status === "authenticated",
     };
 }

@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  fullName  String?  @map("full_name")
+  role      String   @default("staff")
+  createdAt DateTime @default(now()) @map("created_at")
+  shifts    StaffShift[]
+  
+  @@map("users")
+}
+
+model Customer {
+  id          String   @id @default(uuid())
+  name        String
+  phone       String?  @unique
+  totalVisits Int      @default(0) @map("total_visits")
+  lastVisit   DateTime @default(now()) @map("last_visit")
+  createdAt   DateTime @default(now()) @map("created_at")
+  waitlists   Waitlist[]
+
+  @@map("customers")
+}
+
+model SnookerTable {
+  id         String    @id @default(uuid())
+  name       String
+  hourlyRate Float     @map("hourly_rate")
+  status     String    @default("available") // available, occupied, maintenance
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+  sessions   Session[]
+  matches    Match[]
+
+  @@map("snooker_tables")
+}
+
+model Session {
+  id             String    @id @default(uuid())
+  tableId        String    @map("table_id")
+  userId         String?   @map("user_id") // who started it
+  startTime      DateTime  @default(now()) @map("start_time")
+  endTime        DateTime? @map("end_time")
+  playerCount    Int       @default(1) @map("player_count")
+  status         String    @default("active") // active, completed
+  totalAmount    Float?    @map("total_amount")
+  discountAmount Float     @default(0) @map("discount_amount")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime? @updatedAt @map("updated_at")
+  
+  table          SnookerTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  orderItems     OrderItem[]
+  payments       Payment[]
+
+  @@map("sessions")
+}
+
+model Product {
+  id         String   @id @default(uuid())
+  name       String
+  price      Float
+  category   String
+  stock      Int      @default(0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+  orderItems OrderItem[]
+
+  @@map("products")
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  sessionId   String   @map("session_id")
+  productId   String   @map("product_id")
+  quantity    Int      @default(1)
+  priceAtTime Float    @map("price_at_time")
+  status      String   @default("pending") // pending, preparing, served, cancelled
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model StaffShift {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  startingCash Float    @map("starting_cash")
+  createdAt    DateTime @default(now()) @map("created_at")
+  
+  user         User     @relation(fields: [userId], references: [id])
+
+  @@map("staff_shifts")
+}
+
+model Payment {
+  id        String   @id @default(uuid())
+  sessionId String   @map("session_id")
+  amount    Float
+  method    String   // cash, card, upi
+  createdAt DateTime @default(now()) @map("created_at")
+
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+// =======================
+// NEW FEATURE: Waitlist
+// =======================
+model Waitlist {
+  id         String   @id @default(uuid())
+  customerId String?  @map("customer_id")
+  name       String   // Guest name if not a registered customer
+  phone      String?  
+  partySize  Int      @default(1) @map("party_size")
+  status     String   @default("waiting") // waiting, seated, cancelled
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime? @updatedAt @map("updated_at")
+
+  customer   Customer? @relation(fields: [customerId], references: [id])
+
+  @@map("waitlists")
+}
+
+// =======================
+// NEW FEATURE: Tournaments
+// =======================
+model Tournament {
+  id          String   @id @default(uuid())
+  name        String
+  startDate   DateTime @map("start_date")
+  endDate     DateTime? @map("end_date")
+  status      String   @default("upcoming") // upcoming, active, completed
+  entryFee    Float    @default(0) @map("entry_fee")
+  prizePool   Float    @default(0) @map("prize_pool")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime? @updatedAt @map("updated_at")
+
+  matches     Match[]
+
+  @@map("tournaments")
+}
+
+model Match {
+  id           String   @id @default(uuid())
+  tournamentId String   @map("tournament_id")
+  tableId      String?  @map("table_id")
+  player1      String
+  player2      String
+  score1       Int      @default(0)
+  score2       Int      @default(0)
+  status       String   @default("scheduled") // scheduled, in_progress, completed
+  scheduledFor DateTime? @map("scheduled_for")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime? @updatedAt @map("updated_at")
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  table        SnookerTable? @relation(fields: [tableId], references: [id])
+
+  @@map("matches")
+}

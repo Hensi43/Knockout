@@ -1,4 +1,3 @@
-import { createClient } from '@supabase/supabase-js';
 import { getDb, saveDb, MockDb } from './mock-db-helper';
 import crypto from 'crypto';
 
@@ -217,23 +216,10 @@ class MockQueryBuilder {
 }
 
 export function getSupabaseAdmin() {
-    if (process.env.NEXT_PUBLIC_MOCK_MODE === 'true') {
-        const mockClient = {
-            from: (table: keyof MockDb) => {
-                return new MockQueryBuilder(table);
-            }
-        };
-        return mockClient as any;
-    }
-
-    return createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.SUPABASE_SERVICE_ROLE_KEY!,
-        {
-            auth: {
-                autoRefreshToken: false,
-                persistSession: false
-            }
+    const mockClient = {
+        from: (table: keyof MockDb) => {
+            return new MockQueryBuilder(table);
         }
-    );
+    };
+    return mockClient as any;
 }

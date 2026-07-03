@@ -1,18 +1,7 @@
-import { createClient } from '@supabase/supabase-js';
-import { createBrowserClient } from '@supabase/ssr';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-export const supabase = process.env.NEXT_PUBLIC_MOCK_MODE === 'true'
-    ? createMockBrowserClient()
-    : createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createMockBrowserClient();
 
 export function createSupabaseBrowserClient() {
-    if (process.env.NEXT_PUBLIC_MOCK_MODE === 'true') {
-        return createMockBrowserClient();
-    }
-    return createBrowserClient(supabaseUrl, supabaseAnonKey);
+    return createMockBrowserClient();
 }
 
 function createMockBrowserClient(): any {
