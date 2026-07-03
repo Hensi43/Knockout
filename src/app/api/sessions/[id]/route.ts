@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function DELETE(request: Request, context: any) {
     try {
@@ -8,32 +8,26 @@ export async function DELETE(request: Request, context: any) {
         
         if (!id) return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
 
-        const supabase = getSupabaseAdmin();
-
         // Get table ID before deleting
-        const { data: sessionData, error: sessionError } = await supabase
-            .from('sessions')
-            .select('table_id')
-            .eq('id', id)
-            .single();
+        const session = await prisma.session.findUnique({
+            where: { id },
+            select: { tableId: true }
+        });
 
-        if (sessionError) throw sessionError;
-
-        // Delete session entirely (voiding it)
-        const { error: deleteError } = await supabase
-            .from('sessions')
-            .delete()
-            .eq('id', id);
-
-        if (deleteError) throw deleteError;
-
-        // Release the table
-        if (sessionData && sessionData.table_id) {
-            await supabase
-                .from('snooker_tables')
-                .update({ status: 'available' })
-                .eq('id', sessionData.table_id);
+        if (!session) {
+            return NextResponse.json({ error: 'Session not found' }, { status: 404 });
         }
+
+        // Run deletion and table release in a transaction
+        await prisma.$transaction([
+            prisma.session.delete({
+                where: { id }
+            }),
+            prisma.snookerTable.update({
+                where: { id: session.tableId },
+                data: { status: 'available' }
+            })
+        ]);
 
         return NextResponse.json({ success: true });
     } catch (e: any) {

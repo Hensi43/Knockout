@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function POST(request: Request, context: any) {
     try {
@@ -11,41 +11,36 @@ export async function POST(request: Request, context: any) {
             return NextResponse.json({ error: 'Session ID and new Table ID are required' }, { status: 400 });
         }
 
-        const supabase = getSupabaseAdmin();
-
         // 1. Get current session to find old table ID
-        const { data: sessionData, error: sessionError } = await supabase
-            .from('sessions')
-            .select('table_id')
-            .eq('id', id)
-            .single();
+        const sessionData = await prisma.session.findUnique({
+            where: { id },
+            select: { tableId: true }
+        });
 
-        if (sessionError) throw sessionError;
-        const oldTableId = sessionData.table_id;
-
-        // 2. Update new table status to occupied
-        const { error: newTableError } = await supabase
-            .from('snooker_tables')
-            .update({ status: 'occupied' })
-            .eq('id', newTableId);
+        if (!sessionData) {
+            return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+        }
         
-        if (newTableError) throw newTableError;
+        const oldTableId = sessionData.tableId;
 
-        // 3. Re-link session to new table
-        const { error: updateSessionError } = await supabase
-            .from('sessions')
-            .update({ table_id: newTableId })
-            .eq('id', id);
-
-        if (updateSessionError) throw updateSessionError;
-
-        // 4. Update old table status back to available
-        const { error: oldTableError } = await supabase
-            .from('snooker_tables')
-            .update({ status: 'available' })
-            .eq('id', oldTableId);
-
-        if (oldTableError) throw oldTableError;
+        // Perform table swap in a transaction
+        await prisma.$transaction([
+            // 2. Update new table status to occupied
+            prisma.snookerTable.update({
+                where: { id: newTableId },
+                data: { status: 'occupied' }
+            }),
+            // 3. Re-link session to new table
+            prisma.session.update({
+                where: { id },
+                data: { tableId: newTableId }
+            }),
+            // 4. Update old table status back to available
+            prisma.snookerTable.update({
+                where: { id: oldTableId },
+                data: { status: 'available' }
+            })
+        ]);
 
         return NextResponse.json({ success: true, oldTableId, newTableId });
     } catch (e: any) {

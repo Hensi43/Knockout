@@ -1,34 +1,42 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
     try {
-        const supabase = getSupabaseAdmin();
+        const data = await prisma.orderItem.findMany({
+            where: {
+                status: { in: ['pending', 'preparing'] }
+            },
+            include: {
+                product: { select: { name: true } },
+                session: {
+                    select: {
+                        id: true,
+                        tableId: true,
+                        table: { select: { name: true } }
+                    }
+                }
+            },
+            orderBy: { createdAt: 'asc' }
+        });
 
-        // Fetch active order items (KOT orders) that are either pending or preparing
-        const { data, error } = await supabase
-            .from('order_items')
-            .select(`
-                id,
-                session_id,
-                product_id,
-                quantity,
-                price_at_time,
-                status,
-                created_at,
-                products ( name ),
-                sessions (
-                    id,
-                    table_id,
-                    snooker_tables ( name )
-                )
-            `)
-            .in('status', ['pending', 'preparing'])
-            .order('created_at', { ascending: true });
+        const formattedData = data.map(item => ({
+            id: item.id,
+            session_id: item.sessionId,
+            product_id: item.productId,
+            quantity: item.quantity,
+            price_at_time: item.priceAtTime,
+            status: item.status,
+            created_at: item.createdAt,
+            products: { name: item.product.name },
+            sessions: {
+                id: item.session.id,
+                table_id: item.session.tableId,
+                snooker_tables: { name: item.session.table.name }
+            }
+        }));
 
-        if (error) throw error;
-
-        return NextResponse.json(data);
+        return NextResponse.json(formattedData);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

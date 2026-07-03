@@ -1,15 +1,11 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
     try {
-        const supabase = getSupabaseAdmin();
-        const { data, error } = await supabase
-            .from('snooker_tables')
-            .select('*')
-            .order('name', { ascending: true });
-
-        if (error) throw error;
+        const data = await prisma.snookerTable.findMany({
+            orderBy: { name: 'asc' }
+        });
         return NextResponse.json(data);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
@@ -18,20 +14,21 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const supabase = getSupabaseAdmin();
         const { name, hourlyRate } = await request.json();
 
         if (!name || hourlyRate === undefined || hourlyRate === null) {
             return NextResponse.json({ error: 'Name and hourly rate are required' }, { status: 400 });
         }
 
-        const { data, error } = await supabase
-            .from('snooker_tables')
-            .insert([{ name, hourly_rate: hourlyRate, status: 'available' }])
-            .select();
+        const newTable = await prisma.snookerTable.create({
+            data: {
+                name,
+                hourlyRate: hourlyRate,
+                status: 'available'
+            }
+        });
 
-        if (error) throw error;
-        return NextResponse.json(data[0]);
+        return NextResponse.json(newTable);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

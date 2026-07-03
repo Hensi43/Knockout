@@ -1,21 +1,18 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
         const { sessionId, productId, quantity, priceAtTime } = body;
 
-        const supabase = getSupabaseAdmin();
-
         // 1. Fetch product to verify stock
-        const { data: product, error: prodErr } = await supabase
-            .from('products')
-            .select('stock, name')
-            .eq('id', productId)
-            .single();
+        const product = await prisma.product.findUnique({
+            where: { id: productId },
+            select: { stock: true, name: true }
+        });
 
-        if (prodErr || !product) {
+        if (!product) {
             return NextResponse.json({ error: 'Product not found' }, { status: 404 });
         }
 
@@ -25,32 +22,24 @@ export async function POST(request: Request) {
             }, { status: 400 });
         }
 
-        // 2. Insert order item with pending status
-        const { data, error } = await supabase
-            .from('order_items')
-            .insert({
-                session_id: sessionId,
-                product_id: productId,
-                quantity,
-                price_at_time: priceAtTime,
-                status: 'pending'
+        // 2. Insert order item and decrement stock in a transaction
+        const [orderItem] = await prisma.$transaction([
+            prisma.orderItem.create({
+                data: {
+                    sessionId,
+                    productId,
+                    quantity,
+                    priceAtTime,
+                    status: 'pending'
+                }
+            }),
+            prisma.product.update({
+                where: { id: productId },
+                data: { stock: { decrement: quantity } }
             })
-            .select()
-            .single();
+        ]);
 
-        if (error) throw error;
-
-        // 3. Decrement stock
-        const { error: stockErr } = await supabase
-            .from('products')
-            .update({ stock: product.stock - quantity })
-            .eq('id', productId);
-
-        if (stockErr) {
-            console.error("Failed to update product stock:", stockErr);
-        }
-
-        return NextResponse.json(data);
+        return NextResponse.json(orderItem);
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }

@@ -1,15 +1,12 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
     try {
-        const supabase = getSupabaseAdmin();
-        const { data, error } = await supabase
-            .from('products')
-            .select('*')
-            .order('name');
+        const data = await prisma.product.findMany({
+            orderBy: { name: 'asc' }
+        });
 
-        if (error) throw error;
         return NextResponse.json(data);
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
@@ -21,14 +18,10 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { name, price, category, stock } = body;
 
-        const supabase = getSupabaseAdmin();
-        const { data, error } = await supabase
-            .from('products')
-            .insert({ name, price, category, stock })
-            .select()
-            .single();
+        const data = await prisma.product.create({
+            data: { name, price, category, stock }
+        });
 
-        if (error) throw error;
         return NextResponse.json(data);
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });

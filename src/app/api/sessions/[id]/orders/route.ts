@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function GET(request: Request, context: any) {
     try {
@@ -7,14 +7,25 @@ export async function GET(request: Request, context: any) {
         const { id } = params;
         if (!id) return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
 
-        const supabase = getSupabaseAdmin();
-        const { data, error } = await supabase
-            .from('order_items')
-            .select('*, products(name, price)')
-            .eq('session_id', id);
+        const data = await prisma.orderItem.findMany({
+            where: { sessionId: id },
+            include: {
+                product: {
+                    select: { name: true, price: true }
+                }
+            }
+        });
 
-        if (error) throw error;
-        return NextResponse.json(data || []);
+        // The UI might expect `products` property instead of `product` based on supabase join syntax
+        const formattedData = data.map(item => ({
+            ...item,
+            products: {
+                name: item.product.name,
+                price: item.product.price
+            }
+        }));
+
+        return NextResponse.json(formattedData || []);
     } catch (e: any) {
         return NextResponse.json({ error: e.message }, { status: 500 });
     }

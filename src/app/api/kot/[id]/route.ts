@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
     try {
-        const supabase = getSupabaseAdmin();
         const params = await context.params;
         const id = params.id;
         const body = await request.json();
@@ -16,51 +15,36 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         // If order item is cancelled, we revert inventory deduction and remove the item
         if (status === 'cancelled') {
             // Fetch current item to get product_id and quantity
-            const { data: item, error: fetchErr } = await supabase
-                .from('order_items')
-                .select('product_id, quantity')
-                .eq('id', id)
-                .single();
-            
-            if (fetchErr) throw fetchErr;
+            const item = await prisma.orderItem.findUnique({
+                where: { id },
+                select: { productId: true, quantity: true }
+            });
 
             if (item) {
-                // Fetch product details
-                const { data: product } = await supabase
-                    .from('products')
-                    .select('stock')
-                    .eq('id', item.product_id)
-                    .single();
-                
-                if (product) {
-                    // Re-increment stock in products
-                    await supabase
-                        .from('products')
-                        .update({ stock: product.stock + item.quantity })
-                        .eq('id', item.product_id);
-                }
+                // Re-increment stock and delete order item in transaction
+                await prisma.$transaction([
+                    prisma.product.update({
+                        where: { id: item.productId },
+                        data: { stock: { increment: item.quantity } }
+                    }),
+                    prisma.orderItem.delete({
+                        where: { id }
+                    })
+                ]);
+            } else {
+                // Item not found, just return success or skip
             }
 
-            // Delete order item so it doesn't count in final session checkout bill
-            const { error: deleteErr } = await supabase
-                .from('order_items')
-                .delete()
-                .eq('id', id);
-            
-            if (deleteErr) throw deleteErr;
             return NextResponse.json({ success: true, message: 'Order item cancelled and stock reverted' });
         }
 
         // Otherwise update status (pending -> preparing -> served)
-        const { data, error } = await supabase
-            .from('order_items')
-            .update({ status })
-            .eq('id', id)
-            .select()
-            .single();
+        const updatedItem = await prisma.orderItem.update({
+            where: { id },
+            data: { status }
+        });
 
-        if (error) throw error;
-        return NextResponse.json(data);
+        return NextResponse.json(updatedItem);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

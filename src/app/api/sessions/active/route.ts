@@ -1,16 +1,31 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
     try {
-        const supabase = getSupabaseAdmin();
-        const { data, error } = await supabase
-            .from('sessions')
-            .select('*, snooker_tables(name, hourly_rate), order_items(status)')
-            .eq('status', 'active');
+        const data = await prisma.session.findMany({
+            where: { status: 'active' },
+            include: {
+                table: {
+                    select: { name: true, hourlyRate: true }
+                },
+                orderItems: {
+                    select: { status: true }
+                }
+            }
+        });
 
-        if (error) throw error;
-        return NextResponse.json(data);
+        // The frontend expects snooker_tables instead of table, and order_items instead of orderItems
+        const formattedData = data.map(session => ({
+            ...session,
+            snooker_tables: {
+                name: session.table.name,
+                hourly_rate: session.table.hourlyRate
+            },
+            order_items: session.orderItems
+        }));
+
+        return NextResponse.json(formattedData);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function POST(request: Request) {
     try {
-        const supabase = getSupabaseAdmin();
         const { tableId, playerCount, userId } = await request.json();
 
         if (!tableId) {
@@ -11,40 +10,37 @@ export async function POST(request: Request) {
         }
 
         // Check table status
-        const { data: tableData, error: tableError } = await supabase
-            .from('snooker_tables')
-            .select('status')
-            .eq('id', tableId)
-            .single();
+        const tableData = await prisma.snookerTable.findUnique({
+            where: { id: tableId },
+            select: { status: true }
+        });
 
-        if (tableError) throw tableError;
+        if (!tableData) {
+            return NextResponse.json({ error: 'Table not found' }, { status: 404 });
+        }
+        
         if (tableData.status === 'occupied') {
             return NextResponse.json({ error: 'Table is already occupied' }, { status: 400 });
         }
 
-        // Create session
-        const { data: sessionData, error: sessionError } = await supabase
-            .from('sessions')
-            .insert([{
-                table_id: tableId,
-                user_id: userId || null,
-                start_time: new Date().toISOString(),
-                player_count: playerCount || 1,
-                status: 'active'
-            }])
-            .select();
+        // Create session and update table in a transaction
+        const [sessionData] = await prisma.$transaction([
+            prisma.session.create({
+                data: {
+                    tableId,
+                    userId: userId || null,
+                    startTime: new Date(),
+                    playerCount: playerCount || 1,
+                    status: 'active'
+                }
+            }),
+            prisma.snookerTable.update({
+                where: { id: tableId },
+                data: { status: 'occupied' }
+            })
+        ]);
 
-        if (sessionError) throw sessionError;
-
-        // Mark table OCCUPIED
-        const { error: updateError } = await supabase
-            .from('snooker_tables')
-            .update({ status: 'occupied' })
-            .eq('id', tableId);
-
-        if (updateError) throw updateError;
-
-        return NextResponse.json(sessionData[0]);
+        return NextResponse.json(sessionData);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
