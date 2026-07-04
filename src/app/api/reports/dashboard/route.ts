@@ -1,50 +1,43 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
     try {
-        const supabase = getSupabaseAdmin();
-
         // Active Tables
-        const { count: activeTablesCount, error: activeErr } = await supabase
-            .from('snooker_tables')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'occupied');
-        if (activeErr) throw activeErr;
+        const activeTablesCount = await prisma.snookerTable.count({
+            where: { status: 'occupied' }
+        });
 
         // Total Tables
-        const { count: totalTablesCount, error: totalErr } = await supabase
-            .from('snooker_tables')
-            .select('*', { count: 'exact', head: true });
-        if (totalErr) throw totalErr;
+        const totalTablesCount = await prisma.snookerTable.count();
 
         // Ongoing Sessions
-        const { count: ongoingSessionsCount, error: ongoingErr } = await supabase
-            .from('sessions')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'active');
-        if (ongoingErr) throw ongoingErr;
+        const ongoingSessionsCount = await prisma.session.count({
+            where: { status: 'active' }
+        });
 
         // Revenue Today
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const { data: todaySessions, error: revErr } = await supabase
-            .from('sessions')
-            .select('total_amount, end_time, start_time')
-            .eq('status', 'completed')
-            .gte('created_at', today.toISOString());
-        if (revErr) throw revErr;
+        
+        const todaySessions = await prisma.session.findMany({
+            where: {
+                status: 'completed',
+                createdAt: { gte: today }
+            },
+            select: { totalAmount: true, endTime: true, startTime: true }
+        });
 
-        const revenueToday = todaySessions.reduce((acc: number, curr: any) => acc + (Number(curr.total_amount) || 0), 0);
+        const revenueToday = todaySessions.reduce((acc: number, curr: any) => acc + (curr.totalAmount || 0), 0);
 
         // Average Session Duration
         let totalDurationMs = 0;
         let validSessionsCount = 0;
 
         todaySessions.forEach((session: any) => {
-            if (session.end_time && session.start_time) {
-                const start = new Date(session.start_time).getTime();
-                const end = new Date(session.end_time).getTime();
+            if (session.endTime && session.startTime) {
+                const start = new Date(session.startTime).getTime();
+                const end = new Date(session.endTime).getTime();
                 if (end > start) {
                     totalDurationMs += (end - start);
                     validSessionsCount++;
@@ -57,21 +50,29 @@ export async function GET() {
             : 0;
 
         // Recent Sessions (Last 5 completed)
-        const { data: recentSessions, error: recentErr } = await supabase
-            .from('sessions')
-            .select(`
-                id,
-                total_amount,
-                start_time,
-                end_time,
-                status,
-                snooker_tables (name)
-            `)
-            .eq('status', 'completed')
-            .order('end_time', { ascending: false })
-            .limit(5);
+        const recentSessionsData = await prisma.session.findMany({
+            where: { status: 'completed' },
+            orderBy: { endTime: 'desc' },
+            take: 5,
+            select: {
+                id: true,
+                totalAmount: true,
+                startTime: true,
+                endTime: true,
+                status: true,
+                table: { select: { name: true } }
+            }
+        });
 
-        if (recentErr) throw recentErr;
+        // Map to expected UI format
+        const recentSessions = recentSessionsData.map(session => ({
+            id: session.id,
+            total_amount: session.totalAmount,
+            start_time: session.startTime,
+            end_time: session.endTime,
+            status: session.status,
+            snooker_tables: { name: session.table.name }
+        }));
 
         // Dummy Data Fallback for "First Impression"
         const dummySessions = [

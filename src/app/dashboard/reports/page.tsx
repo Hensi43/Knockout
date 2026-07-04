@@ -56,6 +56,38 @@ export default function ReportsPage() {
         document.body.removeChild(link);
     };
 
+    const handleExportPDF = () => {
+        import('jspdf').then(({ default: jsPDF }) => {
+            import('jspdf-autotable').then(({ default: autoTable }) => {
+                const doc = new jsPDF();
+                
+                doc.setFontSize(20);
+                doc.text("Snooker Club Financial Report", 14, 22);
+                
+                doc.setFontSize(12);
+                doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 32);
+                doc.text(`Today's Revenue: INR ${stats.daily}`, 14, 40);
+                doc.text(`Monthly Revenue: INR ${stats.monthly}`, 14, 48);
+                doc.text(`Most Used Table: ${stats.mostUsed.name} (${stats.mostUsed.count} sessions)`, 14, 56);
+
+                const tableData = stats.revenueStats.map((r: any) => [
+                    new Date(r.date).toLocaleDateString(),
+                    `INR ${r.revenue}`
+                ]);
+
+                autoTable(doc, {
+                    startY: 65,
+                    head: [['Date', 'Revenue']],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: { fillColor: [212, 175, 55] } // Gold theme
+                });
+
+                doc.save(`financial_report_${new Date().toISOString().split('T')[0]}.pdf`);
+            });
+        });
+    };
+
     return (
         <DashboardLayout>
             <div className="flex justify-between items-end mb-10">
@@ -63,9 +95,14 @@ export default function ReportsPage() {
                     <h1 className="text-3xl font-bold gold-text-gradient font-serif">Financial Reports</h1>
                     <p className="text-muted-foreground mt-1">Detailed insights into your club's performance.</p>
                 </div>
-                <Button variant="outline" className="flex items-center gap-2" onClick={handleExportCSV}>
-                    <Download size={18} /> Export CSV
-                </Button>
+                <div className="flex gap-3">
+                    <Button variant="outline" className="flex items-center gap-2" onClick={handleExportCSV}>
+                        <Download size={18} /> CSV
+                    </Button>
+                    <Button className="flex items-center gap-2 bg-gradient-to-r from-[#d4af37] to-[#aa8c2c] text-black hover:opacity-90 transition-opacity" onClick={handleExportPDF}>
+                        <Download size={18} /> Export PDF
+                    </Button>
+                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">

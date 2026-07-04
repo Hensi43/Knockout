@@ -1,17 +1,20 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
     try {
-        const supabase = getSupabaseAdmin();
-        const { data, error } = await supabase
-            .from('customers')
-            .select('*')
-            .order('last_visit', { ascending: false });
+        const data = await prisma.customer.findMany({
+            orderBy: { lastVisit: 'desc' }
+        });
 
-        if (error) throw error;
+        const formattedData = data.map(c => ({
+            ...c,
+            total_visits: c.totalVisits,
+            last_visit: c.lastVisit,
+            created_at: c.createdAt
+        }));
 
-        return NextResponse.json(data);
+        return NextResponse.json(formattedData);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

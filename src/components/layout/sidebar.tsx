@@ -13,13 +13,17 @@ import {
     ChevronRight,
     Package,
     Users,
-    ChefHat
+    ChefHat,
+    ClipboardList,
+    Trophy
 } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase";
 
 const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Tables", href: "/dashboard/tables", icon: TableIcon },
+    { name: "Waitlist", href: "/dashboard/waitlist", icon: ClipboardList },
+    { name: "Tournaments", href: "/dashboard/tournaments", icon: Trophy },
     { name: "Active Sessions", href: "/dashboard/sessions", icon: Clock },
     { name: "Kitchen (KOT)", href: "/dashboard/kitchen", icon: ChefHat },
     { name: "Customers", href: "/dashboard/customers", icon: Users },

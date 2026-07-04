@@ -1,35 +1,33 @@
 import { NextResponse } from 'next/server';
-import { getSupabaseAdmin } from '@/lib/supabase-server';
+import prisma from '@/lib/prisma';
 
 export async function GET() {
     try {
-        const supabase = getSupabaseAdmin();
-
         // Get Monthly
         const startOfMonth = new Date();
         startOfMonth.setDate(1);
         startOfMonth.setHours(0, 0, 0, 0);
 
-        const { data: monthData, error: monthErr } = await supabase
-            .from('sessions')
-            .select('total_amount')
-            .eq('status', 'completed')
-            .gte('created_at', startOfMonth.toISOString());
-        if (monthErr) throw monthErr;
-        const monthlyRevenue = monthData.reduce((acc: number, curr: any) => acc + (Number(curr.total_amount) || 0), 0);
+        const monthData = await prisma.session.findMany({
+            where: {
+                status: 'completed',
+                createdAt: { gte: startOfMonth }
+            },
+            select: { totalAmount: true }
+        });
+        const monthlyRevenue = monthData.reduce((acc: number, curr: any) => acc + (curr.totalAmount || 0), 0);
 
         // Get Most Used Table
-        const { data: sessions, error: sessErr } = await supabase
-            .from('sessions')
-            .select('table_id, snooker_tables(name)')
-            .eq('status', 'completed');
-        if (sessErr) throw sessErr;
+        const sessions = await prisma.session.findMany({
+            where: { status: 'completed' },
+            select: { tableId: true, table: { select: { name: true } } }
+        });
 
         const usage: Record<string, { count: number, name: string }> = {};
         sessions.forEach((session: any) => {
-            const id = session.table_id;
+            const id = session.tableId;
             if (!usage[id]) {
-                usage[id] = { count: 0, name: session.snooker_tables?.name || 'Deleted Table' };
+                usage[id] = { count: 0, name: session.table?.name || 'Deleted Table' };
             }
             usage[id].count++;
         });
@@ -40,13 +38,14 @@ export async function GET() {
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-        const { data: revStats, error: revErr } = await supabase
-            .from('sessions')
-            .select('total_amount, created_at')
-            .eq('status', 'completed')
-            .gte('created_at', thirtyDaysAgo.toISOString())
-            .order('created_at', { ascending: true });
-        if (revErr) throw revErr;
+        const revStats = await prisma.session.findMany({
+            where: {
+                status: 'completed',
+                createdAt: { gte: thirtyDaysAgo }
+            },
+            select: { totalAmount: true, createdAt: true },
+            orderBy: { createdAt: 'asc' }
+        });
 
         // Group by day for charts
         const dailyRevenueMap: Record<string, number> = {};
@@ -60,9 +59,9 @@ export async function GET() {
         }
 
         revStats.forEach((session: any) => {
-            const dateStr = session.created_at.split('T')[0];
+            const dateStr = session.createdAt.toISOString().split('T')[0];
             if (dailyRevenueMap[dateStr] !== undefined) {
-                dailyRevenueMap[dateStr] += (Number(session.total_amount) || 0);
+                dailyRevenueMap[dateStr] += (session.totalAmount || 0);
             }
         });
 
